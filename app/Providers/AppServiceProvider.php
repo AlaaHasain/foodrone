@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Models\Reservation;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Schema;
+//use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
@@ -28,7 +28,7 @@ public function boot()
 {
     \Log::info('Current Locale: ' . session('locale'));
 
-    Schema::defaultStringLength(191);
+    //Schema::defaultStringLength(191);
     Paginator::useBootstrapFive();
 
     // 🔤 تعيين اللغة
