@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,18 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append([
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, // ✅ النسخة الصحيحة
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\StartSessionIfMissing::class,
         ]);
-    
+
         $middleware->alias([
-            'auth' => \App\Http\Middleware\Authenticate::class,
+            'check.admin' => \App\Http\Middleware\CheckAdminSession::class,
+            'check.customer' => \App\Http\Middleware\CheckCustomerLogin::class, // ✅ ضيف هذا السطر
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })
-
     ->create();
-
-
-

@@ -29,9 +29,13 @@
                 @csrf
 
                 <div class="form-group">
-                    <label for="name">Category Name</label>
+                    <label for="name">Category Name (English)</label>
                     <input type="text" id="name" name="name" value="{{ old('name') }}" class="form-control" required>
-                    <small class="text-muted" style="color: var(--dark-color); opacity: 0.7;">Enter a unique name for this category</small>
+                </div>
+
+                <div class="form-group mt-3">
+                    <label for="name_ar">اسم التصنيف (بالعربية)</label>
+                    <input type="text" id="name_ar" name="name_ar" value="{{ old('name_ar') }}" class="form-control" required>
                 </div>
 
                 <div class="form-actions">

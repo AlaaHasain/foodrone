@@ -33,6 +33,7 @@ class SettingController extends Controller
             'currency' => 'nullable|string|max:10',
             'timezone' => 'nullable|string|max:50',
             'admin_email' => 'nullable|email|max:255',
+            'order_tax_rate' => 'required|numeric|in:8,16',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -45,23 +46,4 @@ class SettingController extends Controller
         return redirect()->route('admin.settings.index')->with('success', 'Settings updated successfully.');
     }
 
-    public function changePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|min:8|confirmed',
-        ]);
-
-        $user = Auth::user();
-
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
-        }
-
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
-
-        return redirect()->route('admin.settings.index')->with('success_password', 'Password changed successfully.');
-    }
 }

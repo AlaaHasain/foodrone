@@ -168,7 +168,7 @@
       <!-- Contact Info + Social Links -->
       <div class="col-md-4 footer-col">
         <div class="footer_contact">
-          <h4>Contact Us</h4>
+          <h4>{{ __('messages.contact_us') }}</h4>
           <div class="contact_link_box">
             @if($footerInfo && $footerInfo->address)
             <a href="https://maps.google.com/?q={{ urlencode($footerInfo->address) }}" target="_blank">
@@ -210,7 +210,7 @@
         
         <!-- Social Links Section -->
         <div class="footer_social_section" style="margin-top: 30px;">
-          <h4>Social Links</h4>
+          <h4>{{ __('messages.social_links') }}</h4>
           <div class="social_box">
             @if($footerInfo && $footerInfo->facebook)
             <a href="{{ $footerInfo->facebook }}" target="_blank" title="Facebook">
@@ -264,21 +264,26 @@
             {{ setting('restaurant_name') }}
           </a>
           
-          <h4>About Us</h4>
-          @if($footerInfo && $footerInfo->about)
-          <p>{{ $footerInfo->about }}</p>
+          <h4>{{ __('messages.about_us') }}</h4>
+          @if($footerInfo)
+            <p>
+              {{ app()->getLocale() === 'ar' 
+                  ? ($footerInfo->about_ar ?? __('messages.default_about_us')) 
+                  : ($footerInfo->about ?? __('messages.default_about_us')) 
+              }}
+            </p>
           @else
-          <p>Welcome to our restaurant. We offer a unique dining experience with delicious food and excellent service. Visit us today and enjoy our special dishes prepared by our talented chefs.</p>
+            <p>{{ __('messages.default_about_us') }}</p>
           @endif
         </div>
       </div>
 
       <!-- Opening Hours -->
       <div class="col-md-4 footer-col">
-        <h4>Opening Hours</h4>
+        <h4>{{ __('messages.opening_hours') }}</h4>
         @if($footerInfo && $footerInfo->working_hours)
           @php
-            $hours = nl2br($footerInfo->working_hours);
+            $hours = nl2br(app()->getLocale() === 'ar' ? $footerInfo->working_hours_ar : $footerInfo->working_hours);
             if (strpos($hours, '<li>') === false) {
               // إذا لم تكن البيانات على شكل قائمة، نقوم بتحويلها
               $lines = explode('<br />', $hours);
@@ -297,16 +302,16 @@
             }
           @endphp
         @else
-        <ul class="opening-hours-list">
-          <li>
-            <span>Monday - Friday</span>
-            <span>8:00 AM - 10:00 PM</span>
-          </li>
-          <li>
-            <span>Saturday - Sunday</span>
-            <span>10:00 AM - 11:00 PM</span>
-          </li>
-        </ul>
+          <ul class="opening-hours-list">
+            <li>
+              <span>{{ __('messages.weekdays') }}</span>
+              <span>8:00 AM - 10:00 PM</span>
+            </li>
+            <li>
+              <span>{{ __('messages.weekends') }}</span>
+              <span>10:00 AM - 11:00 PM</span>
+            </li>
+          </ul>
         @endif
       </div>
     </div>
@@ -315,7 +320,10 @@
     <div class="footer-info">
       <p>
         &copy; <span id="displayYear"></span> 
-        {{ $footerInfo && $footerInfo->copyright ? $footerInfo->copyright : setting('restaurant_name') . ' - All Rights Reserved' }}
+        {{ $footerInfo && $footerInfo->copyright
+            ? $footerInfo->copyright
+            : setting('restaurant_name') . ' - ' . __('messages.all_rights_reserved')
+        }}
       </p>
     </div>
   </div>

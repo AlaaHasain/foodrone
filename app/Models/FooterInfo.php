@@ -9,15 +9,12 @@ class FooterInfo extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'about',
-        'working_hours',
-        'address',
-        'phone',
-        'email',
-        'facebook',
-        'instagram',
-        'whatsapp',
-        'copyright',
-    ];
+protected $fillable = [
+    'about', 'about_ar',
+    'working_hours', 'working_hours_ar',
+    'copyright', 'copyright_ar',
+    'address', 'phone', 'email',
+    'facebook', 'instagram', 'whatsapp'
+];
+
 }

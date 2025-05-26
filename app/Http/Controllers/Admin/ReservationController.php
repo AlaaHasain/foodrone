@@ -111,4 +111,10 @@ class ReservationController extends Controller
             'message' => 'This time slot is available for reservation.'
         ]);
     }
+public function pendingCount()
+{
+    $count = \App\Models\Reservation::where('status', 'pending')->count();
+    return response()->json(['count' => $count]);
+}
+
 }

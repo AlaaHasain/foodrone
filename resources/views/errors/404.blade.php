@@ -70,17 +70,6 @@
     color: #ffbe33;
   }
 
-  .fire {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 100px;
-    height: 100px;
-    transform: translateX(-50%);
-    background: url("{{ asset('images/fire.gif') }}") no-repeat center center / contain;
-    display: none;
-    pointer-events: none;
-  }
 </style>
 
 <div class="game-container">
@@ -93,7 +82,6 @@
   </div>
 
   <canvas id="gameCanvas" width="400" height="300"></canvas>
-  <div class="fire" id="fireEffect"></div>
   <button id="restart-btn" onclick="restartGame()">Restart Game</button>
 
   <!-- أصوات -->
@@ -117,7 +105,6 @@
   let timeElapsed = 0;
   let intervalId;
 
-  const fireEffect = document.getElementById("fireEffect");
   const scoreDisplay = document.getElementById("scoreDisplay");
   const countdownDiv = document.getElementById("countdown");
   const restartBtn = document.getElementById("restart-btn");
@@ -187,7 +174,6 @@
     gameOver = true;
     failSound.play();
     bgMusic.pause();
-    fireEffect.style.display = "block";
     restartBtn.style.display = "inline-block";
   }
 
@@ -204,7 +190,6 @@
 
     scoreDisplay.textContent = `Score: 0`;
     countdownDiv.textContent = `Returning in 20s`;
-    fireEffect.style.display = "none";
     restartBtn.style.display = "none";
 
     bgMusic.currentTime = 0;

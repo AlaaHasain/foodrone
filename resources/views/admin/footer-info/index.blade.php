@@ -5,9 +5,7 @@
 @section('content')
     <div class="header">
         <h1><i class="fa fa-info-circle"></i> Footer Information Settings</h1>
-        <p class="text-muted">Manage information displayed in the website footer</p>
     </div>
-
     <div class="content-section">
         @if(session('success'))
             <div class="alert alert-success" style="background: #d4edda; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
@@ -31,11 +29,19 @@
                                 <textarea name="about" rows="3" class="form-control">{{ old('about', $footer->about) }}</textarea>
                                 <small class="text-muted">Short description about your restaurant</small>
                             </div>
+                            <div class="form-group mt-3">
+                                <label><i class="fa fa-align-left"></i> النص التعريفي (بالعربية)</label>
+                                <textarea name="about_ar" rows="3" class="form-control">{{ old('about_ar', $footer->about_ar) }}</textarea>
+                            </div>
 
                             <div class="form-group">
                                 <label><i class="fa fa-clock-o"></i> Working Hours</label>
                                 <textarea name="working_hours" rows="3" class="form-control">{{ old('working_hours', $footer->working_hours) }}</textarea>
                                 <small class="text-muted">Enter each day/time on a new line</small>
+                            </div>
+                            <div class="form-group mt-3">
+                                <label><i class="fa fa-clock-o"></i> أوقات الدوام (بالعربية)</label>
+                                <textarea name="working_hours_ar" rows="3" class="form-control">{{ old('working_hours_ar', $footer->working_hours_ar) }}</textarea>
                             </div>
 
                             <div class="form-group">
@@ -102,8 +108,17 @@
             </div>
 
             <div class="form-actions text-center mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fa fa-save"></i> Save Changes
+                <button type="submit" class="btn btn-lg" style="
+                    background-color: #ffbe33;
+                    color: #000;
+                    font-weight: 600;
+                    padding: 12px 30px;
+                    border: none;
+                    border-radius: 30px;
+                    box-shadow: 0 4px 10px rgba(255, 190, 51, 0.4);
+                    transition: all 0.3s ease;
+                ">
+                    <i class="fa fa-save me-2"></i> Save Changes
                 </button>
             </div>
         </form>

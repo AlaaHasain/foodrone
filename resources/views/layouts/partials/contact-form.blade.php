@@ -1,3 +1,4 @@
+
 @if(session('success')) 
 <div id="successMessage" style="
 position: fixed;
@@ -23,8 +24,6 @@ max-width: 300px;
         <div id="progressBar" style="bottom: 0; left: 0; height: 4px; background: rgba(255, 255, 255, 0.7); width: 100%; transition: width 0.1s linear;"></div>
     </div> 
 </div> 
-
-<audio id="contactSound" src="{{ asset('sounds/mixkit-confirmation-tone-2867.wav') }}"></audio>
  
 <script> 
     window.addEventListener('DOMContentLoaded', () => { 
@@ -59,7 +58,7 @@ max-width: 300px;
 <section class="contact_section layout_padding">
   <div class="container">
     <div class="heading_container heading_center">
-      <h2>Contact Us</h2>
+      <h2>{{ __('messages.contact_us') }}</h2>
     </div>
 
     <div class="row mt-5">
@@ -68,19 +67,36 @@ max-width: 300px;
         <form action="{{ route('contact.submit') }}" method="POST" id="contactForm">
           @csrf
           <div class="form-group mb-3">
-            <input type="text" name="name" class="form-control" placeholder="Your Name" required>
+              <input type="text"
+                    name="name"
+                    class="form-control"
+                    placeholder="{{ __('messages.your_name') }}"
+                    value="{{ session('customer_name') }}"
+                    @if(session()->has('customer_name')) readonly @else required @endif>
+          </div>
+
+          <div class="form-group mb-3">
+              <input type="email"
+                    name="email"
+                    class="form-control"
+                    placeholder="{{ __('messages.your_email') }}"
+                    value="{{ session('customer_email') }}"
+                    @if(session()->has('customer_email')) readonly @else required @endif>
+          </div>
+
+          <div class="form-group mb-3">
+              <input type="text"
+                    name="phone"
+                    class="form-control"
+                    placeholder="{{ __('messages.phone_number') }}"
+                    value="{{ session('customer_phone') }}"
+                    @if(session()->has('customer_phone')) readonly @else required @endif>
           </div>
           <div class="form-group mb-3">
-            <input type="email" name="email" class="form-control" placeholder="Your Email" required>
-          </div>
-          <div class="form-group mb-3">
-            <input type="text" name="phone" class="form-control" placeholder="Phone Number" required>
-          </div>
-          <div class="form-group mb-3">
-            <textarea name="message" class="form-control" rows="5" placeholder="Your Message" required></textarea>
+            <textarea name="message" class="form-control" rows="5" placeholder="{{ __('messages.your_message') }}" required></textarea>
           </div>
           <div class="btn_box text-center mt-4">
-            <button type="submit" id="submitBtn" class="btn btn-warning">Send Message</button>
+            <button type="submit" id="submitBtn" class="btn btn-warning">{{ __('messages.send_message') }}</button>
           </div>
         </form>
       </div>

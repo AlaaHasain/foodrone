@@ -10,99 +10,107 @@ use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
-    // Display the cart
     public function index()
-    {   
-        $cart = session()->get('cart', []);
-        return view('cart.index', compact('cart'));
+{
+    // ✅ إذا فيه order_sent = لازم نفضي السلة ونعمل Redirect
+    if (session()->has('order_sent')) {
+        session()->forget('cart');
+        session()->forget('order_sent');
+        return redirect()->route('cart.index', ['cleared' => 1]); // ✅ مهم جدًا
     }
 
-    // Add product to cart (with quantity update)
+    // ✅ إذا رجع من cleared، ما ترجع redirect مرة ثانية
+    if (request()->has('cleared')) {
+        return view('cart.index', ['cart' => []]); // سلة فاضية بعد المسح
+    }
+
+    $cart = session()->get('cart', []);
+    return view('cart.index', compact('cart'));
+}
+
+
     public function add(Request $request)
     {
-        
         $request->validate([
             'menu_item_id' => 'required|exists:menu_items,id',
             'quantity' => 'nullable|integer|min:0',
+            'options' => 'array',
+            'options.*.id' => 'required|exists:option_values,id',
+            'options.*.price' => 'required|numeric|min:0',
         ]);
-    
+
         $menuItem = MenuItem::findOrFail($request->menu_item_id);
         $cart = session()->get('cart', []);
-    
-        if ($request->has('quantity')) {
-            $quantity = (int)$request->quantity;
-            if ($quantity <= 0) {
-                unset($cart[$menuItem->id]);
-            } else {
-                $cart[$menuItem->id] = [
-                    'name' => $menuItem->name,
-                    'price' => $menuItem->price,
-                    'quantity' => $quantity,
-                    'image' => $menuItem->image,
-                ];
-            }
-        } else {
-            $cart[$menuItem->id] = [
-                'name' => $menuItem->name,
-                'price' => $menuItem->price,
-                'quantity' => ($cart[$menuItem->id]['quantity'] ?? 0) + 1,
-                'image' => $menuItem->image,
-            ];
-        }
-    
+        $quantity = $request->input('quantity', 1);
+        $options = $request->input('options', []);
+        $optionsPrice = collect($options)->sum('price');
+        $finalPrice = $menuItem->price + $optionsPrice;
+
+        $cart[$menuItem->id] = [
+            'name' => $menuItem->name,
+            'price' => $finalPrice,
+            'quantity' => $quantity,
+            'image' => $menuItem->image,
+            'options' => $options,
+        ];
+
         session()->put('cart', $cart);
-    
+
         if ($request->expectsJson()) {
             $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
-            $count = collect($cart)->sum('quantity'); // ✅ التعديل المهم هنا
+            $count = collect($cart)->sum('quantity');
             return response()->json([
                 'status' => 'ok',
                 'total' => $total,
                 'count' => $count
             ]);
         }
-    
+
         return redirect()->route('cart.index')->with('success', 'Cart updated successfully.');
     }
-    
 
-    // Add product to cart via AJAX
     public function addAjax(Request $request)
     {
         $request->validate([
             'menu_item_id' => 'required|exists:menu_items,id',
             'quantity' => 'required|integer|min:1',
+            'final_price' => 'required|numeric|min:0',
+            'options' => 'nullable|array',
         ]);
 
         $menuItem = MenuItem::findOrFail($request->menu_item_id);
         $cart = session()->get('cart', []);
-        
-        // Use provided quantity or default to 1
-        $quantity = $request->quantity ?? 1;
 
-        // Add to cart or increment quantity
-        $cart[$menuItem->id] = [
+        $uniqueId = $menuItem->id;
+
+        // إذا فيه خيارات، نميّز العنصر بترميز فريد
+        if (!empty($request->options)) {
+            $optionsKey = md5(json_encode($request->options));
+            $uniqueId = $menuItem->id . '-' . $optionsKey;
+        }
+
+        $cart[$uniqueId] = [
+            'menu_item_id' => $menuItem->id,
             'name' => $menuItem->name,
-            'price' => $menuItem->price,
-            'quantity' => ($cart[$menuItem->id]['quantity'] ?? 0) + $quantity,
+            'price' => $request->final_price, // السعر بعد الإضافات
+            'quantity' => ($cart[$uniqueId]['quantity'] ?? 0) + $request->quantity,
             'image' => $menuItem->image,
+            'options' => $request->options ?? [],
         ];
 
         session()->put('cart', $cart);
-        
-        // Calculate total and count for AJAX response
-        $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
-        $count = collect($cart)->sum('quantity'); // ✅ هذا يحسب مجموع الكميات الفعلية
 
+        // Response للعداد والتوتال
+        $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+        $count = collect($cart)->sum('quantity');
 
         return response()->json([
-            // 'message' => $menuItem->name . ' added to cart!', 
             'count' => $count,
-            'total' => $total
+            'total' => $total,
         ]);
     }
 
-    // Remove product from cart
+
     public function remove(Request $request)
     {
         $cart = session()->get('cart', []);
@@ -112,7 +120,6 @@ class CartController extends Controller
             session()->put('cart', $cart);
         }
 
-        // If request is coming from AJAX, return JSON
         if ($request->expectsJson()) {
             $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
             return response()->json([
@@ -126,26 +133,24 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Item removed from cart.');
     }
 
-    
-    // Checkout page
     public function checkout()
     {
         $cart = session()->get('cart', []);
-        
+
         if (empty($cart)) {
             return redirect()->route('menu')->with('error', 'Your cart is empty.');
         }
 
         $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
-        
+
         return view('cart.checkout', compact('cart', 'total'));
     }
 
     public function placeOrder(Request $request)
     {
-        // التحقق من صحة البيانات
+
         $request->validate([
-            'order_type' => 'required|in:pickup,delivery',
+            'order_type' => 'required|in:pickup,delivery,dine_in',
             'name' => 'required|string|max:255',
             'full_phone' => 'required|string|max:20',
             'pickup_time' => $request->order_type === 'pickup' ? 'required|string' : 'nullable',
@@ -155,19 +160,63 @@ class CartController extends Controller
             'notes' => 'nullable|string',
             'pickup_receiver' => 'nullable|string',
         ]);
-    
+        $now = now();
+
+if ($request->order_type === 'pickup' && $request->filled('pickup_time')) {
+    $pickupTime = now()->format('Y-m-d') . ' ' . $request->pickup_time;
+    if (strtotime($pickupTime) < strtotime($now)) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Pickup time cannot be earlier than the current time.'
+        ], 422);
+    }
+}
+
+if ($request->order_type === 'delivery' && $request->filled('delivery_time')) {
+    $deliveryTime = now()->format('Y-m-d') . ' ' . $request->delivery_time;
+    if (strtotime($deliveryTime) < strtotime($now)) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Delivery time cannot be earlier than the current time.'
+        ], 422);
+    }
+}
+
+        if ($request->order_type === 'dine_in') {
+            $tableNumber = \App\Models\Table::where('qr_token', session('qr_token'))->value('table_number');
+
+            if (!$tableNumber) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Table not recognized. Please rescan the QR.'
+                ], 422);
+            }
+
+            $existingOrder = Order::where('table_number', $tableNumber)
+                ->where('order_type', 'dine_in')
+                ->where('status', '!=', 'completed')
+                ->first();
+
+            if ($existingOrder) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'An order from this table is already in progress. Please wait until it is completed.'
+                ], 409);
+            }
+        }
+
         DB::beginTransaction();
-    
+
         try {
-            $cart = session()->get('cart', []);  // استرجاع السلة من الـ session
-    
-            // التحقق من أن السلة تحتوي على عناصر
+            $cart = session()->get('cart', []);
             if (empty($cart)) {
                 return redirect()->back()->withErrors(['cart' => 'Your cart is empty.']);
             }
-    
-            // إنشاء الطلب
+
             $order = new Order();
+            if ($request->order_type === 'dine_in') {
+                $order->table_number = \App\Models\Table::where('qr_token', session('qr_token'))->value('table_number');
+            }
             $order->order_type = $request->order_type;
             $order->customer_name = $request->name;
             $order->customer_phone = $request->full_phone;
@@ -176,111 +225,106 @@ class CartController extends Controller
             $order->payment_method = $request->payment_method;
             $order->status = 'pending';
             $order->notes = $request->notes;
-            // $order->user_id = auth()->check() ? auth()->id() : null;
-            $order->customer_email = $request->customer_email;
+            $order->customer_email = $request->order_type !== 'dine_in' ? $request->customer_email : null;
 
-
-    
-            // تعيين المعلومات الخاصة بنوع الطلب (Pick Up أو Delivery)
             if ($request->order_type === 'pickup') {
-                $formattedTime = now()->format('Y-m-d') . ' ' . $request->pickup_time;
-                $order->pickup_time = $formattedTime;
-                
+                $order->pickup_time = now()->format('Y-m-d') . ' ' . $request->pickup_time;
                 if ($request->filled('pickup_receiver')) {
                     $order->notes = 'Receiver: ' . $request->pickup_receiver . "\n" . ($request->notes ?? '');
                 }
-            } else {
+            } elseif ($request->order_type === 'delivery') {
                 $order->customer_address = $request->address;
-                $formattedTime = now()->format('Y-m-d') . ' ' . $request->delivery_time;
-                $order->pickup_time = $formattedTime;
+                $order->pickup_time = now()->format('Y-m-d') . ' ' . $request->delivery_time;
             }
-    
-            $order->save(); // حفظ الطلب في قاعدة البيانات
-    
-            // إضافة عناصر السلة إلى جدول order_items
-            foreach ($cart as $id => $item) {
-                $orderItem = new OrderItem();
-                $orderItem->order_id = $order->id;
-                $orderItem->menu_item_id = $id;
-                $orderItem->quantity = $item['quantity'];
-                $orderItem->price = $item['price'];
-                $orderItem->save(); // حفظ العناصر في جدول order_items
-            }
-    
-            DB::commit(); // تأكيد المعاملة
-    
-            // تفريغ السلة بعد إتمام الطلب
-            session()->forget('cart');
-            session()->put('show_my_order', true);
-    
-            // إعادة التوجيه بعد إتمام الطلب
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'status' => 'ok', 
-                    'message' => 'Order placed successfully',
-                    'order_id' => $order->id
-                ]);
-            }
-    
-            return redirect()->route('cart.index')->with('success', 'Your order has been placed successfully!');
-        } catch (\Exception $e) {
-            DB::rollback();
-            
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'status' => 'error', 
-                    'message' => 'Failed to place order: ' . $e->getMessage()
-                ]);
-            }
-            
-            return redirect()->back()->withErrors(['error' => 'Failed to place order: ' . $e->getMessage()]);
-        }
-    }
 
-public function clear()
-{
-    session()->forget('cart');
-    
-    return response()->json([
-        'status' => 'ok',
-        'message' => 'Cart cleared successfully',
-        'count' => 0,
-        'total' => 0
+            $order->save();
+
+foreach ($cart as $id => $item) {
+    $menuItemId = isset($item['menu_item_id']) ? $item['menu_item_id'] : (int) explode('-', $id)[0];
+
+    OrderItem::create([
+        'order_id'     => $order->id,
+        'menu_item_id' => $menuItemId,
+        'quantity'     => $item['quantity'],
+        'price'        => $item['price'],
+        'options'      => isset($item['options']) ? json_encode($item['options']) : null,
     ]);
 }
 
-public function clearAndShow()
-{
-    session()->forget('cart');
-    
-    // هنا نرجع بعد مسح السلة إلى نفس صفحة السلة لكن مع علامة cleared=1
-    return redirect()->route('cart.index', ['cleared' => 1]);
-}
-public function addFromQR(Request $request)
+// ✅ ضيف هذا السطر هون
+session()->forget('cart'); // حذف السلة
+session()->put('order_sent', true); // تفعيل الفلاج عشان يتم redirect مرة وحدة بس
+
+return response()->json([
+    'status' => 'ok',
+    'message' => 'Order placed successfully',
+    'order_id' => $order->id
+]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to place order: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function clear()
+    {
+        session()->forget('cart');
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'Cart cleared successfully',
+            'count' => 0,
+            'total' => 0
+        ]);
+    }
+
+    public function clearAndShow()
+    {
+        session()->forget('cart');
+        return redirect()->route('cart.index', ['cleared' => 1]);
+    }
+
+    public function addFromQR(Request $request)
 {
     $request->validate([
         'item_id' => 'required|exists:menu_items,id',
+        'quantity' => 'nullable|integer|min:1',
+        'final_price' => 'required|numeric|min:0',
+        'options' => 'nullable|array',
     ]);
 
     $item = MenuItem::findOrFail($request->item_id);
     $cart = session()->get('qr_cart', []);
 
-    if (isset($cart[$item->id])) {
-        $cart[$item->id]['quantity'] += 1;
-    } else {
-        $cart[$item->id] = [
-            'name' => $item->name,
-            'price' => $item->price,
-            'image' => $item->image,
-            'quantity' => 1,
-        ];
+    $quantity = $request->input('quantity', 1);
+    $options = $request->input('options', []);
+
+    $uniqueId = $item->id;
+
+    if (!empty($options)) {
+        $optionsKey = md5(json_encode($options));
+        $uniqueId = $item->id . '-' . $optionsKey;
     }
 
-session()->put('qr_cart', $cart);
+    $cart[$uniqueId] = [
+        'menu_item_id' => $item->id,
+        'name'         => $item->name,
+        'price'        => $request->final_price,
+        'quantity'     => ($cart[$uniqueId]['quantity'] ?? 0) + $quantity,
+        'image'        => $item->image,
+        'options'      => $options,
+    ];
+
+    session()->put('qr_cart', $cart);
 
     return response()->json([
         'message' => 'Item added to cart',
-        'count' => count($cart),
+        'count' => collect($cart)->sum('quantity'),
     ]);
 }
 

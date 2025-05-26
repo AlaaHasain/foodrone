@@ -39,25 +39,23 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'role' => 'required|in:super_admin,admin,staff,customer',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:255',
-        ]);
-    
-        // 🔐 توليد كلمة سر عشوائية
-        $plainPassword = 'admin-' . rand(1000, 9999);
-    
-        $validated['password'] = Hash::make($plainPassword);
-    
-        $user = User::create($validated);
-    
-        // ✉️ إرسال إيميل (اختياري)
-        // Mail::to($user->email)->send(new WelcomeUser($user, $plainPassword));
-    
-        return redirect()->route('admin.users.index')->with('success', "User created successfully. Password: {$plainPassword}");
+        // dd($request->all());
+
+$validated = $request->validate([
+    'name' => 'required|string|max:255',
+    'email' => 'required|email|unique:users',
+    'role' => 'required|in:super_admin,admin,staff,customer',
+    'phone' => 'nullable|string|max:20',
+    'address' => 'nullable|string|max:255',
+    'password' => 'required|string|min:6|confirmed', // ← ضروري
+]);
+
+$validated['password'] = Hash::make($request->password);
+
+$user = User::create($validated);
+
+return redirect()->route('admin.users.index')->with('success', "User created successfully.");
+
     }
     
 

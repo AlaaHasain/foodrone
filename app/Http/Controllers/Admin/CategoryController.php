@@ -20,31 +20,41 @@ class CategoryController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name'
-        ]);
+{
+    $request->validate([
+        'name' => 'required|string|max:255|unique:categories,name',
+        'name_ar' => 'required|string|max:255'
+    ]);
 
-        Category::create(['name' => $request->name]);
+    Category::create([
+        'name' => $request->name,
+        'name_ar' => $request->name_ar
+    ]);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category added successfully.');
-    }
+    return redirect()->route('admin.categories.index')->with('success', 'Category added successfully.');
+}
+
 
     public function edit(Category $category)
     {
         return view('admin.categories.edit', compact('category'));
     }
 
-    public function update(Request $request, Category $category)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id
-        ]);
+public function update(Request $request, Category $category)
+{
+    $request->validate([
+        'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+        'name_ar' => 'required|string|max:255'
+    ]);
 
-        $category->update(['name' => $request->name]);
+    $category->update([
+        'name' => $request->name,
+        'name_ar' => $request->name_ar
+    ]);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category updated successfully.');
-    }
+    return redirect()->route('admin.categories.index')->with('success', 'Category updated successfully.');
+}
+
 
     public function destroy(Category $category)
     {

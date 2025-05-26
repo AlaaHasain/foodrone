@@ -1,17 +1,43 @@
 <style>
-    /* Main container to handle the sidebar and content layout */
+   /* إخفاء Scrollbar في جميع المتصفحات */
+body, html {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+   /* Main container to handle the sidebar and content layout */
     .admin-container {
         display: flex;
         min-height: 100vh;
         position: relative;
     }
     
+    html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* نمنع scroll من الجسم */
+}
+
+.dashboard-container {
+    height: 100vh;
+    display: flex;
+    overflow: hidden; /* مهم لمنع التمرير غير المقصود */
+}
+
     /* Content area that adjusts based on sidebar state */
     .content-area {
         flex: 1;
         margin-left: 260px; /* Same as sidebar width */
         transition: margin-left 0.3s ease;
         width: calc(100% - 260px);
+            overflow-y: auto; /* ✅ هنا يكون التمرير العمودي */
+    max-height: 100vh; /* ✅ نحدد أقصى ارتفاع */
+    padding: 20px; /* اختياري: عشان ما تلزق المحتويات */
     }
     
     .content-area.sidebar-collapsed {
@@ -31,6 +57,9 @@
         flex-direction: column;
         transition: all 0.3s ease;
         z-index: 1000;
+        overflow-y: auto; 
+            -ms-overflow-style: none;  /* إخفاء شريط التمرير في IE و Edge */
+    scrollbar-width: none; 
     }
 
     .sidebar.collapsed {
@@ -58,6 +87,25 @@
         display: flex;
         flex-direction: column;
     }
+
+    .sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #393e46 #222831;
+}
+
+/* For Webkit browsers (Chrome, Safari) */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #222831;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: #393e46;
+    border-radius: 6px;
+}
 
     .menu-item {
         position: relative;
@@ -147,6 +195,32 @@
         }
     }
 </style>
+<style>
+.pulse-animation {
+    animation: pulse 1.5s infinite;
+}
+
+.sidebar.collapsed .sidebar-logo,
+.sidebar.collapsed .sidebar-logo-text {
+    display: none !important;
+}
+
+@keyframes pulse {
+    0%   { transform: scale(1); opacity: 1; }
+    50%  { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.sidebar-logo {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+}
+
+</style>
+
 
 @php
     $userCount = \App\Models\User::count();
@@ -155,120 +229,108 @@
 <!-- Main container that wraps sidebar and content -->
 <div class="admin-container">
     <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2>Lemongrass</h2>
-            <button class="sidebar-toggle" id="sidebar-toggle">
-                <i class="fas fa-bars"></i>
-            </button>
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar"> <!-- ✅ هذا السطر مفقود عندك -->
+    <div class="sidebar-header">
+        <div class="sidebar-logo-wrapper" style="display: flex; align-items: center;">
+            @php $logo = setting('logo'); @endphp
+
+            @if($logo)
+                <img src="{{ asset('storage/' . $logo) }}" alt="Logo" class="sidebar-logo" style="height: 80px;">
+            @else
+                <h2 class="sidebar-logo-text" style="margin: 0;">Lemongrass</h2>
+            @endif
         </div>
+
+        <button class="sidebar-toggle" id="sidebar-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
 
         <div class="sidebar-menu">
             <a href="{{ route('admin.dashboard') }}" class="menu-item" data-title="Dashboard">
                 <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
             </a>
         
-            <a href="{{ route('admin.users.index') }}" class="menu-item" data-title="Users">
-                <i class="fas fa-users"></i><span>Users ({{ $userCount }})</span>
-            </a>
+@if(session('admin_role') === 'super_admin')
+<a href="{{ route('admin.users.index') }}" class="menu-item">
+    <i class="fas fa-users"></i><span>Users</span>
+</a>
+@endif
+
         
-            <a href="{{ route('admin.menu-items.index') }}" class="menu-item" data-title="Menu Items">
-                <i class="fas fa-utensils"></i><span>Menu Items</span>
-            </a>
+@if(in_array(session('admin_role'), ['staff', 'admin', 'super_admin']))
+<a href="{{ route('admin.orders.index') }}" class="menu-item">
+    <i class="fas fa-shopping-cart"></i>
+    <span>Orders</span>
+    <span id="ordersAlert" class="badge-danger" style="display: none; margin-left: auto;"></span>
+</a>
+@endif
+
         
-            {{-- ✅ قسم التصنيفات --}}
-            <a href="{{ route('admin.categories.index') }}" class="menu-item" data-title="Categories">
-                <i class="fas fa-tags"></i><span>Categories</span>
-            </a>
-        
-            {{-- ✅ قسم الطاولات QR --}}
-            <a href="{{ route('admin.tables.index') }}" class="menu-item" data-title="QR Tables">
-                <i class="fas fa-qrcode"></i><span>QR Tables</span>
-            </a>
-        
-            <a href="{{ route('admin.orders.index') }}" class="menu-item" data-title="Orders">
-                <i class="fas fa-shopping-cart"></i><span>Orders</span>
-            </a>
-        
-            <a href="{{ route('admin.reservations.index') }}" class="menu-item" data-title="Reservations">
-                <i class="fas fa-calendar-alt"></i>
-                <span>
-                    Reservations
-                    @if(isset($pendingReservationsCount) && $pendingReservationsCount > 0)
-                        <span class="badge badge-danger">{{ $pendingReservationsCount }}</span>
-                    @endif
-                </span>
-            </a>
-        
-            <a href="{{ route('admin.galleries.index') }}" class="menu-item" data-title="Gallery">
-                <i class="fas fa-images"></i><span>Gallery</span>
-            </a>
-        
-            <a class="menu-item" href="{{ route('admin.contact-messages.index') }}" data-title="Contact Messages" id="contact-messages-link">
-                <i class="fas fa-envelope"></i>
-                <span>
-                    Contact Messages
-                    <span class="badge badge-danger" id="sidebar-messages-badge" style="display: none;">0</span>
-                </span>
-            </a>
-        
-            <a href="{{ route('admin.testimonials.index') }}" class="menu-item position-relative" id="testimonialLink" data-title="Testimonials">
-                <i class="fas fa-comment-dots"></i>
-                <span>
-                    Testimonials
-                    <span class="badge badge-danger" id="testimonialAlert" style="display: none;">0</span>
-                </span>
-            </a>
+@if(in_array(session('admin_role'), ['admin', 'super_admin']))
+<a href="{{ route('admin.menu-items.index') }}" class="menu-item">
+    <i class="fas fa-utensils"></i><span>Menu Items</span>
+</a>
+
+<a href="{{ route('admin.options.index') }}" class="menu-item">
+    <i class="fas fa-sliders-h"></i><span>Options</span>
+</a>
+
+<a href="{{ route('admin.categories.index') }}" class="menu-item">
+    <i class="fas fa-tags"></i><span>Categories</span>
+</a>
+
+<a href="{{ route('admin.tables.index') }}" class="menu-item">
+    <i class="fas fa-qrcode"></i><span>QR Tables</span>
+</a>
+
+<a href="{{ route('admin.reservations.index') }}" class="menu-item">
+    <i class="fas fa-calendar-alt"></i>
+    <span>Reservations</span>
+    <span id="reservationAlert" class="badge-danger" style="display: none; margin-left: auto;"></span>
+</a>
+
+<a href="{{ route('admin.galleries.index') }}" class="menu-item">
+    <i class="fas fa-images"></i><span>Gallery</span>
+</a>
+
+<a href="{{ route('admin.contact-messages.index') }}" class="menu-item">
+    <i class="fas fa-envelope"></i>
+    <span>Contact Messages</span>
+    <span id="sidebar-messages-badge" class="badge-danger" style="display: none; margin-left: auto;"></span>
+</a>
+
+<a href="{{ route('admin.testimonials.index') }}" class="menu-item">
+    <i class="fas fa-comment-dots"></i>
+    <span>Testimonials</span>
+    <span id="testimonialAlert" class="badge-danger" style="display: none; margin-left: auto;"></span>
+</a>
+
+@endif
+
         
             <audio id="testimonialSound" src="{{ asset('sounds/mixkit-confirmation-tone-2867.wav') }}" preload="auto"></audio>
         
-            <a href="{{ route('admin.footer-info.index') }}" class="menu-item" data-title="Footer Info">
-                <i class="fas fa-shoe-prints"></i><span>Footer Info</span>
-            </a>
-        
-            <a href="{{ route('admin.settings.index') }}" class="menu-item" data-title="Settings">
-                <i class="fas fa-cog"></i><span>Settings</span>
-            </a>
+@if(session('admin_role') === 'super_admin')
+<a href="{{ route('admin.footer-info.index') }}" class="menu-item">
+    <i class="fas fa-shoe-prints"></i><span>Footer Info</span>
+</a>
+
+<a href="{{ route('admin.settings.index') }}" class="menu-item">
+    <i class="fas fa-cog"></i><span>Settings</span>
+</a>
+@endif
+
+<hr style="border-color: #444; margin: 1rem 0;">
+
+<a href="{{ route('admin.logout') }}" class="menu-item" data-title="Logout">
+    <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+</a>
+
         </div>        
     </div>
 </div>
-
-<script>
-    let lastTestimonialCount = 0;
-
-    function checkNewTestimonials() {
-        fetch("{{ route('admin.testimonials.pendingCount') }}")
-            .then(response => response.json())
-            .then(data => {
-                const newCount = data.count;
-                const badge = document.getElementById('testimonialAlert');
-                const sound = document.getElementById('testimonialSound');
-
-                if (newCount > 0) {
-                    badge.style.display = 'inline-block';
-                    badge.textContent = newCount;
-                } else {
-                    badge.style.display = 'none';
-                }
-
-                if (newCount > lastTestimonialCount) {
-                    // New testimonial came in
-                    if (sound) sound.play();
-                }
-
-                lastTestimonialCount = newCount;
-            })
-            .catch(error => {
-                console.error("Error checking testimonials:", error);
-            });
-    }
-
-    // Start polling
-    document.addEventListener("DOMContentLoaded", () => {
-        checkNewTestimonials(); // First load
-        setInterval(checkNewTestimonials, 10000); // Every 10 seconds
-    });
-</script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -295,6 +357,8 @@
         
         // Mobile detection and toggle
         const mobileToggle = function() {
+                if (!sidebar || !contentArea) return; // 🛑 الحماية من null
+
             if (window.innerWidth <= 768) {
                 if (!sidebar.classList.contains('mobile-toggled')) {
                     sidebar.classList.add('mobile-toggled');
@@ -319,29 +383,111 @@
         window.addEventListener('resize', mobileToggle);
     });
 </script>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const sidebarBadge = document.getElementById('sidebar-messages-badge');
-        
+
         function checkUnreadMessages() {
-            fetch('{{ route("admin.contact-messages.unread-count") }}')
-                .then(response => response.json())
+            fetch('/admin/contact-messages/unread-count', {
+                headers: { 'Accept': 'application/json' }
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.json();
+                })
                 .then(data => {
-                    const count = data.count;
-                    
+                    const count = data.count || 0;
                     if (count > 0) {
                         sidebarBadge.textContent = count;
                         sidebarBadge.style.display = 'inline-block';
+                        sidebarBadge.classList.add('pulse-animation');
                     } else {
                         sidebarBadge.style.display = 'none';
+                        sidebarBadge.classList.remove('pulse-animation');
                     }
                 })
-                .catch(error => console.error('Error checking unread messages:', error));
+                .catch(error => {
+                    console.error('Error checking unread messages:', error);
+                });
         }
-        
-        // Check immediately and then every 30 seconds
+
+        // تشغيل أول مرة، ثم كل 30 ثانية
         checkUnreadMessages();
         setInterval(checkUnreadMessages, 30000);
     });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const ordersBadge = document.getElementById('ordersAlert');
+
+    function checkNewOrders() {
+        fetch("{{ route('admin.orders.pendingCount') }}")
+            .then(res => res.json())
+            .then(data => {
+                const count = data.count || 0;
+                if (count > 0) {
+                    ordersBadge.textContent = count;
+                    ordersBadge.style.display = 'inline-block';
+                    ordersBadge.classList.add('pulse-animation');
+                } else {
+                    ordersBadge.style.display = 'none';
+                    ordersBadge.classList.remove('pulse-animation');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking orders:', error);
+            });
+    }
+
+    // تشغيل أول مرة ثم كل 15 ثانية
+    checkNewOrders();
+    setInterval(checkNewOrders, 15000);
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const testimonialBadge = document.getElementById('testimonialAlert');
+    const reservationBadge = document.getElementById('reservationAlert');
+
+    function checkTestimonials() {
+        fetch("{{ route('admin.testimonials.pendingCount') }}")
+            .then(res => res.json())
+            .then(data => {
+                const count = data.count || 0;
+                if (count > 0) {
+                    testimonialBadge.textContent = count;
+                    testimonialBadge.style.display = 'inline-block';
+                    testimonialBadge.classList.add('pulse-animation');
+                } else {
+                    testimonialBadge.style.display = 'none';
+                    testimonialBadge.classList.remove('pulse-animation');
+                }
+            });
+    }
+
+    function checkReservations() {
+        fetch("{{ route('admin.reservations.pendingCount') }}")
+            .then(res => res.json())
+            .then(data => {
+                const count = data.count || 0;
+                if (count > 0) {
+                    reservationBadge.textContent = count;
+                    reservationBadge.style.display = 'inline-block';
+                    reservationBadge.classList.add('pulse-animation');
+                } else {
+                    reservationBadge.style.display = 'none';
+                    reservationBadge.classList.remove('pulse-animation');
+                }
+            });
+    }
+
+    // أول استدعاء + تحديث كل 15 ثانية
+    checkTestimonials();
+    checkReservations();
+    setInterval(() => {
+        checkTestimonials();
+        checkReservations();
+    }, 15000);
+});
 </script>

@@ -38,7 +38,6 @@
                     @endforeach
                 </select>
             </div>
-            
 
             <div class="form-group">
                 <label>Change Image (optional)</label>
@@ -55,29 +54,46 @@
                     <option value="1" {{ $menuItem->is_featured ? 'selected' : '' }}>Yes</option>
                 </select>
             </div>
+
             <div class="form-group">
                 <label>
-                    <input type="checkbox" name="is_popular" {{ old('is_popular') ? 'checked' : '' }}>
+                    <input type="checkbox" name="is_popular" {{ old('is_popular', $menuItem->is_popular) ? 'checked' : '' }}>
                     Mark as Popular Dish
                 </label>
             </div>
+
             <div class="form-group">
                 <label>Is Offer?</label>
                 <select name="is_offer" class="form-control">
-                    <option value="0" selected>No</option>
-                    <option value="1">Yes</option>
+                    <option value="0" {{ !$menuItem->is_offer ? 'selected' : '' }}>No</option>
+                    <option value="1" {{ $menuItem->is_offer ? 'selected' : '' }}>Yes</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label>Old Price</label>
-                <input type="text" name="old_price" class="form-control" placeholder="Enter old price">
+                <input type="text" name="old_price" class="form-control" value="{{ $menuItem->old_price }}">
             </div>
-            
+
             <div class="form-group">
                 <label>Offer Price</label>
-                <input type="text" name="offer_price" class="form-control" placeholder="Enter offer price">
+                <input type="text" name="offer_price" class="form-control" value="{{ $menuItem->offer_price }}">
             </div>
+
+            {{-- ✅ NEW: Attach Options --}}
+            <div class="form-group">
+                <label for="options">Choose Options (if applicable)</label>
+                <select name="options[]" multiple class="form-control">
+                    @foreach($options as $option)
+                        <option value="{{ $option->id }}"
+                            {{ in_array($option->id, $menuItem->options->pluck('id')->toArray()) ? 'selected' : '' }}>
+                            {{ $option->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <small class="form-text text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple options.</small>
+            </div>
+
 
             <div class="form-actions">
                 <a href="{{ route('admin.menu-items.index') }}" class="secondary-btn">Cancel</a>

@@ -37,4 +37,10 @@ class TestimonialController extends Controller
         $testimonial->delete();
         return redirect()->back()->with('success', 'Testimonial deleted successfully.');
     }
+    public function pendingCount()
+{
+    $count = \App\Models\Testimonial::where('status', 'pending')->count();
+    return response()->json(['count' => $count]);
+}
+
 }

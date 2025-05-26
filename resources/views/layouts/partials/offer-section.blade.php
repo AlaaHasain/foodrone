@@ -1,7 +1,6 @@
-<!-- Glide.js CSS -->
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@glidejs/glide@3.6.0/dist/css/glide.core.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@glidejs/glide@3.6.0/dist/css/glide.theme.min.css">
-<!-- Font Awesome for cart icon -->
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <!-- CSS -->
@@ -194,6 +193,76 @@
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         animation: pulse-animation 0.5s ease-in-out 1;
     }
+    /* ✅ Slide Panel Styles */
+.slide-panel {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 350px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -3px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    transition: right 0.4s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.slide-panel.open {
+    right: 0;
+}
+
+.slide-header {
+    padding: 15px 20px;
+    background: #ffbe33;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.slide-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+    text-align: left;
+}
+
+.slide-content img {
+    width: 100%;
+    max-height: 150px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    max-height: 200px;
+    object-fit: cover;
+}
+
+.slide-price {
+    font-weight: bold;
+    color: #222831;
+    font-size: 18px;
+}
+
+#slide-close {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    color: white;
+    cursor: pointer;
+}
+
+.menu-option-checkbox {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+.menu-option-checkbox input {
+    margin-right: 10px;
+}
+.menu-option-checkbox input[type="checkbox"],
+.menu-option-checkbox input[type="radio"] {
+    accent-color: #ffbe33; /* أخضر غامق */
+}
+
 
     @keyframes pulse-animation {
         0% {
@@ -278,7 +347,7 @@
 <section class="offer_section layout_padding-bottom text-center">
     <div class="container">
         <div class="heading_container heading_center mb-5">
-            <h2>Special Offers</h2>
+            <h2>{{ __('messages.special_offers') }}</h2>
         </div>
 
         @if (count($offers) > 0)
@@ -299,9 +368,20 @@
                                             <span class="new-price">${{ number_format($offer->offer_price, 2) }}</span>
                                         </div>
                                         <div class="buttons-container">
-                                            <button class="btn btn-detail"
-                                                onclick="openOfferModal({{ $offer->id }})">Details</button>
-                                            <button class="btn btn-cart add-to-cart-btn" data-id="{{ $offer->id }}">
+                                            <button class="btn btn-detail open-slide-panel"
+                                                data-id="{{ $offer->id }}"
+                                                data-name="{{ $offer->name }}"
+                                                data-description="{{ $offer->description }}"
+                                                data-image="{{ asset('storage/' . $offer->image) }}"
+                                                data-price="{{ $offer->offer_price }}">
+                                                {{ __('messages.details') }}
+                                            </button>
+                                            <button class="btn btn-cart open-slide-panel"
+                                                data-id="{{ $offer->id }}"
+                                                data-name="{{ $offer->name }}"
+                                                data-description="{{ $offer->description }}"
+                                                data-image="{{ asset('storage/' . $offer->image) }}"
+                                                data-price="{{ $offer->offer_price }}">
                                                 <i class="fa fa-shopping-cart"></i>
                                             </button>
                                         </div>
@@ -322,35 +402,171 @@
         @else
             <div class="no-offers-message">
                 <i class="fas fa-exclamation-circle"></i>
-                <p>No special offers available now. Please check back later!</p>
+                <p>{{ __('messages.no_special_offers') }}</p>
             </div>
         @endif
     </div>
-</section>
 
-<!-- Modals للعروض -->
-@foreach ($offers as $offer)
-    <div class="modal fade" id="offerModal{{ $offer->id }}" tabindex="-1"
-        aria-labelledby="offerModalLabel{{ $offer->id }}" aria-hidden="true" data-backdrop="static"
-        data-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ $offer->name }}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-                    {{ $offer->description }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
+    <!-- ✅ Slide Panel لتفاصيل العرض -->
+<div id="offer-slide-panel" class="slide-panel menu-style-panel">
+    <div class="slide-header">
+        <h5 id="slide-title">Title</h5>
+        <button id="slide-close">&times;</button>
     </div>
-@endforeach
+<div class="slide-content">
+    <img id="slide-image" src="" alt="Offer Image">
+    <p id="slide-description" class="mb-3"></p>
+
+   <!-- ✅ السعر الأساسي -->
+<p class="slide-price mb-2 d-flex justify-content-between align-items-center">
+    <strong>{{ __('messages.base_price') }}:</strong>
+    <span dir="ltr" style="display:inline-block; min-width: 90px; text-align: start;">
+        <span id="slide-price"></span>
+        {{ __('messages.currency') }}
+    </span>
+</p>
+
+    <!-- ✅ الخيارات -->
+    <div id="offer-options-container" class="mt-3"></div>
+
+    <!-- ✅ السعر الإجمالي -->
+<p class="slide-price mt-3 d-flex justify-content-between align-items-center">
+    <strong>{{ __('messages.total') }}:</strong>
+    <span dir="ltr" style="display:inline-block; min-width: 90px; text-align: start;">
+        <span id="offer-slide-total"></span>
+        {{ __('messages.currency') }}
+    </span>
+</p>
+
+    <button id="slide-add-to-cart" class="btn btn-cart mt-3" data-id="">
+        {{ __('messages.add_to_cart') }}
+    </button>
+</div>
+
+
+
+</div>
+
+</section>
+<style>
+   #offer-slide-panel {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+@media (max-width: 576px) {
+    #offer-slide-panel {
+        width: 85%;
+        right: -85%;
+    }
+}
+
+#offer-slide-panel.open {
+    right: 0;
+}
+
+#offer-slide-panel .slide-header {
+    padding: 18px 20px;
+    background: #ffbe33;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#offer-slide-panel .slide-header h5 {
+    font-weight: 600;
+    margin: 0;
+    font-size: 18px;
+}
+
+#offer-slide-panel .slide-content {
+    padding: 25px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+#offer-slide-panel .slide-content img {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    height: 200px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#offer-slide-panel #slide-description {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    font-size: 15px;
+}
+
+#offer-slide-panel .slide-price {
+    font-weight: bold;
+    color: #222831;
+    font-size: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+    margin-top: 15px;
+}
+
+#slide-close {
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+#slide-close:hover {
+    transform: rotate(90deg);
+}
+
+#slide-add-to-cart {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    font-size: 16px;
+    background-color: #ffbe33;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(255, 190, 51, 0.3);
+}
+
+#slide-add-to-cart:hover {
+    background-color: #f0aa18;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 190, 51, 0.4);
+}
+
+#slide-add-to-cart::before {
+    content: '\f07a';
+    font-family: 'FontAwesome';
+    font-size: 18px;
+}
+
+</style>
+
+
 <!-- jQuery + Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -417,15 +633,147 @@
         }
     });
 
-    function openOfferModal(id) {
-        // إعادة تعيين أي تأثيرات سابقة
-        const modalContent = $('#offerModal' + id).find('.modal-content');
-        modalContent.css('animation', 'none');
-
-        // إعادة تشغيل التأثير بإعادة تطبيق الـ animation
-        setTimeout(function() {
-            modalContent.css('animation', 'pulse-animation 0.5s ease-in-out 1');
-            $('#offerModal' + id).modal('show');
-        }, 10);
-    }
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const panel = document.getElementById('offer-slide-panel');
+        const closeBtn = document.getElementById('slide-close');
+        const addToCartBtn = document.getElementById('slide-add-to-cart');
+
+        // عند الضغط على زر Details
+        document.querySelectorAll('.open-slide-panel').forEach(button => {
+            button.addEventListener('click', () => {
+                document.getElementById('slide-title').textContent = button.dataset.name;
+                document.getElementById('slide-description').textContent = button.dataset.description;
+
+                document.getElementById('slide-image').src = button.dataset.image;
+                document.getElementById('slide-price').textContent = parseFloat(button.dataset.price).toFixed(2);
+                document.getElementById('offer-slide-total').textContent = parseFloat(button.dataset.price).toFixed(2);
+                window.basePrice = parseFloat(button.dataset.price); // ✅ تخزين السعر الأساسي
+                // تحديث ID في زر الإضافة
+                addToCartBtn.setAttribute('data-id', button.dataset.id);
+
+                // ✅ جلب الخيارات من السيرفر
+fetch(`/offers/options/${button.dataset.id}`)
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById('offer-options-container');
+        container.innerHTML = ''; // تفريغ الخيارات القديمة
+
+data.options.forEach(option => {
+    const group = document.createElement('label');
+    group.className = 'menu-option-group';
+    group.innerHTML = `<label>${option.name}</label>`;
+
+    const inputType = option.type === 'radio' ? 'radio' : 'checkbox'; // ✅ تحديد النوع
+    const inputName = `option_${option.name.replace(/\s+/g, '_')}`;   // ✅ اسم موحد للراديو
+
+    option.values.forEach(value => {
+        const row = document.createElement('label');
+        row.className = 'menu-option-checkbox';
+        row.innerHTML = `
+            <input type="${inputType}"
+                   name="${inputName}"
+                   class="option-checkbox offer-option"
+                   data-id="${value.id}"
+                   data-price="${value.price}"
+                   data-label="${value.label}"
+                   data-option-name="${option.name}">
+            <span>${value.label} ${parseFloat(value.price) > 0 ? `(+${parseFloat(value.price).toFixed(2)} JOD)` : ''}</span>
+        `;
+        group.appendChild(row);
+    });
+
+    container.appendChild(group);
+});
+
+
+    })
+    .catch(() => {
+        document.getElementById('offer-options-container').innerHTML =
+            `<div class="text-danger">Failed to load options.</div>`;
+    });
+
+    
+                // فتح اللوحة الجانبية
+                panel.classList.add('open');
+            });
+        });
+
+        // عند الضغط على ×
+        closeBtn.addEventListener('click', () => {
+            panel.classList.remove('open');
+        });
+
+        document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('offer-option')) {
+        let total = parseFloat(document.getElementById('slide-price').textContent) || 0;
+
+        document.querySelectorAll('.offer-option:checked').forEach(opt => {
+            total += parseFloat(opt.dataset.price || 0);
+        });
+
+        document.getElementById('offer-slide-total').textContent = total.toFixed(2);
+    }
+});
+
+        // عند الضغط على Add to Cart
+// عند الضغط على Add to Cart
+addToCartBtn.addEventListener('click', function () {
+    if (!window.isLoggedIn) {
+        window.location.href = "{{ route('login') }}";
+        return;
+    }
+
+    // 👇 باقي الكود الأصلي لإضافة العنصر إلى السلة
+    const itemId = this.getAttribute('data-id');
+    const selectedOptions = [];
+    let totalPrice = basePrice;
+    
+    document.querySelectorAll('.option-checkbox:checked').forEach(cb => {
+        selectedOptions.push({
+            id: cb.dataset.id,
+            value: cb.nextElementSibling?.textContent.split('(+')[0].trim(),
+            additional_price: parseFloat(cb.dataset.price || 0)
+        });
+        totalPrice += parseFloat(cb.dataset.price || 0);
+    });
+
+    fetch("{{ route('cart.add-ajax') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            menu_item_id: itemId,
+            quantity: 1,
+            options: selectedOptions,
+            final_price: totalPrice
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+            document.dispatchEvent(new CustomEvent('cartUpdated', {
+                detail: { count: data.count }
+            }));
+
+        panel.classList.remove('open');
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Item added to cart!',
+            showConfirmButton: false,
+            timer: 1000
+        });
+    })
+    .catch(() => {
+        Swal.fire('Error', 'Failed to add item', 'error');
+    });
+});
+
+    });
+</script>
+

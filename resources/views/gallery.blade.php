@@ -2,6 +2,70 @@
 
 @section('title', 'Gallery')
 
+<style>
+/* شبكة الصور */
+#gallery-container {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* الكارد */
+.gallery-card {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    background-color: #fff;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    animation: fadeInCard 0.6s ease forwards;
+    opacity: 0;
+    transform: translateY(30px);
+    aspect-ratio: 1 / 1; /* ✅ مربع تمامًا، متجاوب */
+    position: relative;
+}
+
+/* الصورة */
+.gallery-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* ✅ تغطية متناسقة */
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+/* Hover */
+.gallery-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+}
+
+.gallery-card:hover img {
+    transform: scale(1.05);
+}
+
+/* Responsive tweaks */
+@media (max-width: 576px) {
+    #gallery-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Animation */
+@keyframes fadeInCard {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Delays */
+.gallery-item:nth-child(1) .gallery-card { animation-delay: 0.05s; }
+.gallery-item:nth-child(2) .gallery-card { animation-delay: 0.1s; }
+.gallery-item:nth-child(3) .gallery-card { animation-delay: 0.15s; }
+.gallery-item:nth-child(4) .gallery-card { animation-delay: 0.2s; }
+.gallery-item:nth-child(5) .gallery-card { animation-delay: 0.25s; }
+</style>
+
 @section('content')
 
 {{-- Header --}}
@@ -9,36 +73,32 @@
 
 <section class="py-5 bg-light">
     <div class="container">
-        <h2 class="text-center mb-4">Our Gallery</h2>
+        <h2 class="text-center mb-4">{{ __('messages.our_gallery') }}</h2>
         <div class="mb-4 text-center">
-            <button class="btn btn-outline-dark me-2 filter-btn active" data-filter="all">All</button>
-            <button class="btn btn-outline-warning me-2 filter-btn" data-filter="restaurant">Restaurant</button>
-            <button class="btn btn-outline-success filter-btn" data-filter="food">Food</button>
+            <button class="btn btn-outline-dark me-2 filter-btn active" data-filter="all">
+                {{ __('messages.all') }}
+            </button>
+            <button class="btn btn-outline-warning me-2 filter-btn" data-filter="restaurant">
+                {{ __('messages.restaurant') }}
+            </button>
+            <button class="btn btn-outline-success filter-btn" data-filter="food">
+                {{ __('messages.food') }}
+            </button>
         </div>
         
 
         @if ($galleries->count())
-            <div class="row" id="gallery-container">
+            <div id="gallery-container">
                 @foreach ($galleries as $gallery)
-                    <div class="col-md-4 mb-4 gallery-item" data-type="{{ $gallery->type }}">
-                        <div class="card shadow border-0 rounded-4 overflow-hidden">
-                            <div class="ratio ratio-4x3">
-                                <img src="{{ asset('storage/' . $gallery->image_path) }}" class="img-fluid w-100 h-100"
-                                    style="object-fit: cover;" alt="Gallery Image">
-
-                            </div>
-                            <div class="card-body text-center">
-                                <span class="badge bg-dark text-white text-capitalize px-3 py-2"
-                                    style="font-size: 14px;">
-                                    {{ $gallery->type }}
-                                </span>
-                            </div>
+                    <div class="gallery-item" data-type="{{ $gallery->type }}">
+                        <div class="gallery-card">
+                            <img src="{{ asset('storage/' . $gallery->image_path) }}" alt="Gallery Image">
                         </div>
                     </div>
                 @endforeach
             </div>
         @else
-            <p class="text-center text-muted">No images found yet.</p>
+            <p class="text-center text-muted">{{ __('messages.no_images_found') }}</p>
         @endif
     </div>
 </section>

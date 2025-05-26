@@ -74,9 +74,11 @@
           <div class="overlay"></div>
           <div class="container">
             <div class="detail-box col-md-7 col-lg-6">
-              <h1>Asian Cuisine Restaurant</h1>
-              <p>Experience authentic Asian flavors in every dish.</p>
-              <div class="btn-box"><a href="{{ route('menu') }}" class="btn1">Order Now</a></div>
+              <h1>{{ __('messages.slide_1_title') }}</h1>
+              <p>{{ __('messages.slide_1_text') }}</p>
+              <div class="btn-box">
+                <a href="{{ route('menu') }}" class="btn1">{{ __('messages.order_now') }}</a>
+              </div>
             </div>
           </div>
         </div>
@@ -87,9 +89,11 @@
           <div class="overlay"></div>
           <div class="container">
             <div class="detail-box col-md-7 col-lg-6">
-              <h1>Authentic Flavors</h1>
-              <p>Discover the rich and diverse flavors of Asia.</p>
-              <div class="btn-box"><a href="{{ route('menu') }}" class="btn1">Order Now</a></div>
+              <h1>{{ __('messages.slide_2_title') }}</h1>
+              <p>{{ __('messages.slide_2_text') }}</p>
+              <div class="btn-box">
+                <a href="{{ route('menu') }}" class="btn1">{{ __('messages.order_now') }}</a>
+              </div>
             </div>
           </div>
         </div>
@@ -100,14 +104,17 @@
           <div class="overlay"></div>
           <div class="container">
             <div class="detail-box col-md-7 col-lg-6">
-              <h1>Premium Ingredients</h1>
-              <p>Only the finest ingredients for unforgettable dishes.</p>
-              <div class="btn-box"><a href="{{ route('menu') }}" class="btn1">Order Now</a></div>
+              <h1>{{ __('messages.slide_3_title') }}</h1>
+              <p>{{ __('messages.slide_3_text') }}</p>
+              <div class="btn-box">
+                <a href="{{ route('menu') }}" class="btn1">{{ __('messages.order_now') }}</a>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
 
     <!-- Indicators -->
     <div class="container">

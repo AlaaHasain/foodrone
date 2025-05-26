@@ -1,9 +1,15 @@
+
 @extends('layouts.app')
 
 @section('title', 'Home')
 
 @section('styles')
+@section('styles')
 <style>
+  body {
+    background-color: #edf7ed;
+  }
+
   .stars {
     color: #ffbe33;
     font-size: 20px;
@@ -20,6 +26,8 @@
     margin-top: 10px;
   }
 </style>
+@endsection
+
 @endsection
 
 @section('content')
@@ -63,5 +71,13 @@
     });
 </script>
 @endif
-@endsection
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // ✅ إعادة تفعيل الـ dropdowns يدويًا
+    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (dropdownToggleEl) {
+        new bootstrap.Dropdown(dropdownToggleEl);
+    });
+});
+</script>
+@endsection

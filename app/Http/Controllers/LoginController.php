@@ -17,15 +17,50 @@ class LoginController extends Controller
 
     public function sendOtp(Request $request)
     {
+        // ✅ تحقق إذا كان quick login
+        if ($request->has('quick_login')) {
+            $request->validate([
+                'email' => 'required|email',
+            ]);
+
+            $user = User::where('email', $request->email)->first();
+            if (!$user) {
+                return redirect()->back()->with('error', 'البريد الإلكتروني غير مسجل.');
+            }
+
+            $otp = rand(100000, 999999);
+            $user->update([
+                'otp' => $otp,
+                'otp_expires_at' => now()->addMinutes(5),
+            ]);
+
+            session([
+                'otp_email' => $request->email,
+                'remember' => true,
+                'otp_sent_at' => now(),
+            ]);
+
+            try {
+                Mail::raw("Your OTP code is: {$otp}", function ($message) use ($request) {
+                    $message->to($request->email)->subject('Your OTP Code');
+                });
+            } catch (\Exception $e) {
+                \Log::error('Error sending OTP email: ' . $e->getMessage());
+            }
+
+            return redirect()->route('verify.form')->with('success', 'Verification code has been sent to your email.');
+        }
+
+        // ✅ تسجيل الدخول العادي
         $request->validate([
             'email' => 'required|email',
             'name'  => 'required|string|min:3|max:50|regex:/^[a-zA-Z\s]+$/',
             'phone' => 'required|string|min:9|max:15|regex:/^[0-9+\-]+$/',
         ]);
-    
+
         $email = $request->email;
         $otp = rand(100000, 999999);
-    
+
         $user = User::updateOrCreate(
             ['email' => $email],
             [
@@ -36,9 +71,13 @@ class LoginController extends Controller
                 'otp_expires_at' => now()->addMinutes(5),
             ]
         );
-    
-        session(['otp_email' => $email]);
-    
+
+        session([
+            'otp_email' => $email,
+            'remember' => $request->has('remember'),
+            'otp_sent_at' => now(),
+        ]);
+
         try {
             Mail::raw("Your OTP code is: {$otp}", function ($message) use ($email) {
                 $message->to($email)->subject('Your OTP Code');
@@ -46,15 +85,49 @@ class LoginController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error sending OTP email: ' . $e->getMessage());
         }
-    
-        return redirect()->route('verify.form')->with('success', 'تم إرسال رمز التحقق إلى بريدك الإلكتروني!');
+
+        return redirect()->route('verify.form')->with('success', 'Verification code has been sent to your email!');
     }
     
+public function resendOtp(Request $request)
+{
+    $email = session('otp_email');
+
+    if (!$email) {
+        return response()->json(['message' => 'Invalid session.'], 422);
+    }
+
+    $user = User::where('email', $email)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found.'], 404);
+    }
+
+    $otp = rand(100000, 999999);
+    $user->update([
+        'otp' => $otp,
+        'otp_expires_at' => now()->addMinutes(5),
+    ]);
+
+    session(['otp_sent_at' => now()]);
+
+    try {
+        Mail::raw("Your OTP code is: {$otp}", function ($message) use ($email) {
+            $message->to($email)->subject('Your OTP Code');
+        });
+    } catch (\Exception $e) {
+        \Log::error('Error sending OTP email: ' . $e->getMessage());
+        return response()->json(['message' => 'Failed to send OTP.'], 500);
+    }
+
+    return response()->json(['message' => 'New OTP sent to your email.']);
+}
+
 
     public function showVerifyForm()
     {
         if (!session('otp_email')) {
-            return redirect()->route('login')->with('error', 'جلسة غير صالحة. الرجاء المحاولة مرة أخرى.');
+            return redirect()->route('login')->with('error', 'Invalid session. Please try again.');
         }
         
         return view('auth.verify-otp');
@@ -65,33 +138,68 @@ class LoginController extends Controller
         $request->validate([
             'otp' => ['required', 'digits:6'],
         ]);
-        
+
         $email = session('otp_email');
-        
+
         if (!$email) {
-            return redirect()->route('login')->with('error', 'جلسة غير صالحة. الرجاء المحاولة مرة أخرى.');
+            return redirect()->route('login')->with('error', 'Invalid session. Please try again.');
         }
 
-        $user = User::where('email', $email)
-            ->where('otp', $request->otp)
-            ->where('otp_expires_at', '>=', now())
-            ->first();
+        $user = User::where('email', $email)->first();
 
         if (!$user) {
-            return back()->with('error', '❌ رمز التحقق غير صالح أو منتهي الصلاحية.');
+            return back()->with('error', 'User not found.')->withInput();
         }
         
-        // تحديث بيانات المستخدم وتسجيل الدخول
+        // Check if OTP matches (convert to string to ensure correct comparison)
+        if ($user->otp != (string)$request->otp) {
+            return back()->withErrors([
+                'otp' => '❌ رمز التحقق غير صحيح، حاول مرة أخرى.'
+            ])->withInput();
+        }
+
+        // Check if OTP is expired
+        if ($user->otp_expires_at < now()) {
+            return back()->withErrors([
+                'otp' => '⌛ رمز التحقق منتهي الصلاحية، أعد الإرسال.'
+            ])->withInput();
+        }
+
+        // ✅ تفريغ الـ OTP بعد الاستخدام
         $user->update([
             'otp' => null,
             'otp_expires_at' => null,
         ]);
-        
-        Auth::login($user);
-        
-        session(['customer_email' => $email]);
-        session()->flash('welcome', 'مرحباً ' . $user->name . '!');
 
-        return redirect(url('/my-orders'));
+        // ✅ تسجيل الدخول عبر Auth
+        $remember = session('remember', false);
+        session()->forget(['remember', 'otp_sent_at']);
+        \Auth::login($user, $remember);
+
+        // ✅ إضافة بيانات العميل للجلسة
+        session([
+            'customer_id'    => $user->id,
+            'customer_email' => $email,
+            'customer_name'  => $user->name,
+            'customer_phone' => $user->phone,
+        ]);
+
+        // ✅ Flash message للترحيب
+        session()->flash('welcome', 'Welcome ' . $user->name . '!');
+
+        // ✅ نرسل remember_email إلى الجلسة لتُقرأ في الـ Blade وتُحفظ في localStorage
+        if ($remember) {
+            session([
+                'remember_email' => $email,
+                'customer_name'  => $user->name,
+                'customer_phone' => $user->phone,
+            ]);
+        }
+
+        // ✅ التوجيه للصفحة المطلوبة (أو الصفحة الرئيسية)
+        $redirectTo = session('redirect_after_login', route('home'));
+        session()->forget('redirect_after_login');
+
+        return redirect($redirectTo);
     }
 }

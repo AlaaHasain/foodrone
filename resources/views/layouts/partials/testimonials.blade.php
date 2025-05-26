@@ -46,7 +46,7 @@
 <section class="client_section layout_padding"> 
   <div class="container"> 
     <div class="heading_container heading_center"> 
-      <h2>What Our Customers Say</h2> 
+      <h2>{{ __('messages.what_customers_say') }}</h2> 
     </div> 
  
     @if(isset($approvedTestimonials) && $approvedTestimonials->count()) 
@@ -64,7 +64,7 @@
         @endforeach 
       </div> 
     @else 
-      <p class="text-center mt-4">No testimonials yet.</p> 
+      <p class="text-center mt-4">{{ __('messages.no_testimonials') }}</p>
     @endif 
   </div> 
 </section>

@@ -1,4 +1,3 @@
-
 @extends('admin.layouts.app')
 
 @section('title', 'Orders')
@@ -45,6 +44,7 @@
         background-color: #f1f1f1;
     }
 </style>
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 @section('content')
     <div class="header">
@@ -58,41 +58,117 @@
                     <th>Order ID</th>
                     <th>Customer</th>
                     <th>Email</th>
+                    <th>Table</th>
                     <th>Type</th>
-                    <th>Total Items</th>
-                    <th>Payment</th>
                     <th>Status</th>
                     <th>Created At</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             
-            <tbody>
-                @forelse($orders as $order)
-                    <tr>
-                        <td>#{{ $order->id }}</td>
-                        <td>{{ $order->customer_name }}</td>
-                        <td>{{ $order->customer_email }}</td>
-                        <td>{{ ucfirst($order->order_type) }}</td>
-                        <td>{{ $order->orderItems->sum('quantity') }}</td>
-                        <td>{{ ucfirst($order->payment_method) }}</td>
-                        <td>{{ ucfirst($order->status) }}</td>
-                        <td>{{ $order->created_at ? $order->created_at->format('d M Y H:i') : '' }}</td>
-                        <td class="text-center align-middle">
-                            <a href="{{ route('admin.orders.show', $order->id) }}" class="btn btn-outline-dark btn-sm" title="View Order">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </td>                                                                      
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="text-center">No orders found.</td>
-                    </tr>
-                @endforelse
+            <tbody id="orders-table-body">
+                <tr><td colspan="11" class="text-center">Loading...</td></tr>
             </tbody>
+
         </table>
-        <div style="margin-top: 20px;">
-            {{ $orders->links() }}
-        </div>        
+        <nav>
+            <ul class="pagination" id="pagination"></ul>
+        </nav>     
     </div>
 @endsection
+
+<audio id="orderAlertSound" src="{{ asset('sounds/loud-alert.mp3') }}" preload="auto" loop></audio>
+
+<script>
+let oldCount = 0;
+let audioPlaying = false;
+let currentPage = 1;
+
+function fetchOrders(page = 1) {
+    fetch(`{{ route('admin.orders.fetch') }}?page=${page}`)
+        .then(res => res.json())
+        .then(data => {
+            const tableBody = document.getElementById('orders-table-body');
+            tableBody.innerHTML = data.html;
+
+            const newCount = [...tableBody.querySelectorAll('tr')]
+                .filter(row => row.innerHTML.includes('badge bg-warning')).length;
+
+            if (newCount > oldCount) {
+                const sound = document.getElementById('orderAlertSound');
+                if (!audioPlaying) {
+                    sound.play();
+                    audioPlaying = true;
+                }
+            }
+
+            if (newCount === 0 && audioPlaying) {
+                const sound = document.getElementById('orderAlertSound');
+                sound.pause();
+                sound.currentTime = 0;
+                audioPlaying = false;
+            }
+
+            oldCount = newCount;
+            renderPagination(data.pagination);
+        });
+}
+
+function renderPagination(pagination) {
+    const container = document.getElementById('pagination');
+    container.innerHTML = '';
+
+    for (let i = 1; i <= pagination.last_page; i++) {
+        const li = document.createElement('li');
+        li.classList.add('page-item');
+        if (i === pagination.current_page) li.classList.add('active');
+
+        const a = document.createElement('a');
+        a.classList.add('page-link');
+        a.href = '#';
+        a.textContent = i;
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            currentPage = i;
+            fetchOrders(i);
+        });
+
+        li.appendChild(a);
+        container.appendChild(li);
+    }
+}
+
+setInterval(() => fetchOrders(currentPage), 5000);
+document.addEventListener('DOMContentLoaded', () => fetchOrders(currentPage));
+
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('accept-btn')) {
+        const orderId = e.target.dataset.id;
+
+        fetch(`/admin/orders/${orderId}`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'preparing' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            fetchOrders(currentPage);
+            const sound = document.getElementById('orderAlertSound');
+            sound.pause();
+            sound.currentTime = 0;
+            audioPlaying = false;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Order Accepted!',
+                text: 'The order has been marked as preparing.',
+                confirmButtonColor: '#28a745'
+            });
+        });
+    }
+});
+</script>

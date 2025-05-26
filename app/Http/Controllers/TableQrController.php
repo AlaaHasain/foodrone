@@ -16,6 +16,7 @@ class TableQrController extends Controller
         $table = Table::where('qr_token', $token)->firstOrFail();
         $categories = Category::with('menuItems')->get();
     
+        
         return view('frontend.menu', [
             'table' => $table,
             'categories' => $categories,

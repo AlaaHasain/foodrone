@@ -31,7 +31,9 @@ class FooterInfoController extends Controller
         
         $validated = $request->validate([
             'about' => 'nullable|string',
+            'about_ar' => 'nullable|string', // ✅
             'working_hours' => 'nullable|string',
+            'working_hours_ar' => 'nullable|string', // ✅
             'address' => 'nullable|string',
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
@@ -40,6 +42,7 @@ class FooterInfoController extends Controller
             'whatsapp' => 'nullable|url',
             'copyright' => 'nullable|string',
         ]);
+
 
         // في حالة السجل الجديد
         if (!$footerInfo->exists) {

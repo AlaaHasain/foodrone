@@ -81,6 +81,10 @@
         @yield('content')
     </main>
 
+<script>
+    // هل المستخدم مسجل دخول؟ نرسلها من Laravel
+    window.isLoggedIn = {{ session()->has('customer_id') ? 'true' : 'false' }};
+</script>
 
     <!-- JS Files -->
     <!-- jQuery -->
@@ -107,7 +111,22 @@
 
     @yield('scripts')
 
-    
+<script>
+    if (localStorage.getItem('order_sent')) {
+        localStorage.removeItem('cart');
+        sessionStorage.removeItem('cart');
+        localStorage.removeItem('order_sent');
+    }
+</script>
+@if(session('remember_email') && session('customer_name'))
+<script>
+    localStorage.setItem('remembered_email', "{{ session('remember_email') }}");
+    localStorage.setItem('remembered_name', "{{ session('customer_name') }}");
+</script>
+@endif
+
+@stack('scripts')
+
 </body>
 
 </html>

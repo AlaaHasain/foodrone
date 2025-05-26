@@ -9,13 +9,17 @@ use App\Models\Category;
 class MenuController extends Controller
 {
     // عرض صفحة القائمة
-    public function index()
-    {
-        $menuItems = MenuItem::with('category')->get(); // ⬅️ هنا المهم
-        $categories = \App\Models\Category::all(); // عشان تعرض التصنيفات
-    
-        return view('menu', compact('menuItems', 'categories'));
-    }
+public function index()
+{
+    $categories = Category::with('menuItems')->get();
+
+    $featuredItems = MenuItem::where('is_featured', 1)->take(10)->get(); // حسب ما بدك العدد
+
+    $menuItems = MenuItem::with('category', 'options')->get();
+
+    return view('menu', compact('categories', 'menuItems', 'featuredItems'));
+}
+
 
     // عرض تفاصيل منتج محدد
     public function show($id)

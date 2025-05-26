@@ -36,9 +36,13 @@
                 @method('PUT')
 
                 <div class="form-group">
-                    <label for="name">Category Name</label>
+                    <label for="name">Category Name (English)</label>
                     <input type="text" id="name" name="name" value="{{ $category->name }}" class="form-control" required>
-                    <small class="text-muted" style="color: var(--dark-color); opacity: 0.7;">Update the name for this category</small>
+                </div>
+
+                <div class="form-group mt-3">
+                    <label for="name_ar">اسم التصنيف (بالعربية)</label>
+                    <input type="text" id="name_ar" name="name_ar" value="{{ $category->name_ar }}" class="form-control" required>
                 </div>
 
                 <div class="form-actions">

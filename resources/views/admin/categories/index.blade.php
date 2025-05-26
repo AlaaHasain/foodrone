@@ -31,7 +31,10 @@
             <tbody>
                 @forelse ($categories as $category)
                     <tr>
-                        <td class="align-middle">{{ $category->name }}</td>
+                        <td class="align-middle">
+                            <strong>{{ $category->name }}</strong><br>
+                            <small style="color: #888;">{{ $category->name_ar }}</small>
+                        </td>
                         <td style="text-align: center;">
                             <div class="action-icons">
                                 <a href="{{ route('admin.categories.edit', $category->id) }}" style="display: inline-block; margin-right: 10px;">

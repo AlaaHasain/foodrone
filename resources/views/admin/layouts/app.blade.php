@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <title>@yield('title', 'Admin Dashboard')</title>
-
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     {{-- هنا روابط الخطوط والفونت اوسم والستايلات --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
     {{-- هنا ستايلك اللي كتبته كامل (ممكن نخليه بملف CSS لاحقاً لو بدك ترتيب أكثر) --}}
     <style>
@@ -34,10 +36,14 @@
             font-family: "Open Sans", sans-serif;
         }
 
+        /* إخفاء Scrollbar في جميع المتصفحات */
+
         body {
             background-color: #f5f7fa;
             color: var(--dark-color);
             overflow-x: hidden;
+                -ms-overflow-style: none;  /* IE 10+ */
+    scrollbar-width: none;     /* Firefox */
         }
 
         h1,
@@ -282,6 +288,7 @@
             padding: 20px;
             margin-left: 250px;
             transition: margin-left 0.3s;
+                overflow-y: auto; /* ✅ أضف هذا */
         }
 
         .main-content-expanded {
@@ -658,6 +665,9 @@
         }
     </style>
 @yield('styles')
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 </head>
 <body>
 
@@ -693,7 +703,7 @@
             @endif
         </a>
 
-        <img src="{{ asset('images/admin.png') }}" alt="Admin" style="width: 40px; height: 40px; border-radius: 50%;">
+        {{-- <img src="{{ asset('images/admin.png') }}" alt="Admin" style="width: 40px; height: 40px; border-radius: 50%;"> --}}
     </div>
 </div>
 

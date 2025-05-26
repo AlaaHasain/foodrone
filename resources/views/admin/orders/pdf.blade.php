@@ -130,10 +130,24 @@
                 </tr>
             @endforeach
         </tbody>
+        @php
+            $taxRate = setting('order_tax_rate') ?? 0;
+            $taxAmount = $total * ($taxRate / 100);
+            $totalWithTax = $total + $taxAmount;
+        @endphp
+
         <tfoot>
             <tr>
-                <td colspan="3">Grand Total</td>
+                <td colspan="3">Subtotal</td>
                 <td>${{ number_format($total, 2) }}</td>
+            </tr>
+            <tr>
+                <td colspan="3">Tax ({{ $taxRate }}%)</td>
+                <td>${{ number_format($taxAmount, 2) }}</td>
+            </tr>
+            <tr>
+                <td colspan="3"><strong>Total (incl. tax)</strong></td>
+                <td><strong>${{ number_format($totalWithTax, 2) }}</strong></td>
             </tr>
         </tfoot>
     </table>

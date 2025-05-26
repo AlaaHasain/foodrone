@@ -16,5 +16,6 @@ class Setting extends Model
         'currency',
         'timezone',
         'admin_email',
+        'order_tax_rate',
     ];
 }

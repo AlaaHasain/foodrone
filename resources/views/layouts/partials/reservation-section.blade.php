@@ -1,4 +1,5 @@
 <style>
+
     .reservation-form .form-group {
         margin-bottom: 20px;
         position: relative;
@@ -176,7 +177,7 @@
 <section class="book_section layout_padding">
     <div class="container">
         <div class="heading_container heading_center mb-4">
-            <h2>Book A Table</h2>
+            <h2>{{ __('messages.book_a_table') }}</h2>
         </div>
         <div class="row justify-content-center">
             <div class="col-md-8">
@@ -184,25 +185,34 @@
                     id="reservationForm">
                     @csrf
                     <div class="form-group">
-                        <input type="text" name="customer_name" class="form-control" placeholder="Your Name"
-                            required>
+                        <input type="text" name="customer_name" class="form-control"
+                            placeholder="{{ __('messages.your_name') }}"
+                            value="{{ old('customer_name', session('customer_name')) }}"
+                            @if(session()->has('customer_name')) readonly @else required @endif
+                            pattern="^[A-Za-z]{2,}\s[A-Za-z]{2,}.*$"
+                            title="Please enter at least first and last name">
                     </div>
                     <div class="form-group">
-                        <input type="tel" name="contact_number" class="form-control" placeholder="Phone Number"
-                            required>
+                        <input type="tel" name="contact_number" class="form-control"
+                            placeholder="{{ __('messages.phone_number') }}"
+                            value="{{ old('contact_number', session('customer_phone')) }}"
+                            @if(session()->has('customer_phone')) readonly @else required @endif
+                            pattern="^[0-9+\s\-]{7,}$"
+                            title="Please enter a valid phone number">
                     </div>                   
                     <div class="form-group">
-                        <label for="people-count">How many persons?</label>
+                        <label for="people-count">{{ __('messages.how_many_persons') }}</label>
                         <input type="number" id="people-count" name="people" class="form-control" min="1"
                             max="20" ...>
                     </div>
                     <div class="form-group">
-                        <label for="reservation-date">Date</label>
+                        <label for="reservation-date">{{ __('messages.date') }}</label>
                         <input type="date" id="reservation-date" name="date" class="form-control" required>
                         <div class="error-message" id="date-error"></div>
                     </div>
                     <div class="form-group">
-                        <label for="reservation-time">Time (12:00 PM - 11:00 PM only)</label>
+                        
+                        <label for="reservation-time">{{ __('messages.time_range') }}</label>
                         <input type="time" id="reservation-time" name="time" class="form-control" min="12:00"
                             max="23:00" required>
                         <div class="error-message" id="time-error"></div>
@@ -215,7 +225,7 @@
                     <div class="btn_box text-center mt-4">
                       <button type="submit" class="btn btn-warning" id="bookButton">
                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loadingSpinner"></span>
-                        <span id="bookBtnText">Book Now</span>
+                        <span id="bookBtnText">{{ __('messages.book_now') }}</span>
                       </button>
                     </div>
                 </form>
@@ -238,7 +248,7 @@
     align-items: center;
 ">
     <span style="margin-right: 10px;">✅</span>
-    <span id="successMessageText">تم الحجز بنجاح!</span>
+    <span id="successMessageText">{{ __('messages.reservation_success') }}</span>
     <div id="customProgressBar" style="
         position: absolute;
         bottom: 0;
@@ -249,11 +259,6 @@
     "></div>
 </div>
 
-<!-- ملف الصوت المباشر (لا يعتمد على Laravel) -->
-<audio id="customNotificationSound">
-    <source src="https://assets.mixkit.co/active_storage/sfx/2867/2867-preview.mp3" type="audio/mpeg">
-    <!-- نستخدم رابط مباشر بدلاً من asset -->
-</audio>
 </section>
 
 <script>

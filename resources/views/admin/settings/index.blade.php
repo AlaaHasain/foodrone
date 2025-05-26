@@ -53,7 +53,7 @@
         <div class="form-group">
             <label>Current Logo</label><br>
             @if(setting('logo'))
-                <img src="{{ asset('storage/' . setting('logo')) }}" alt="Logo" style="height: 70px; max-height: 70px; width: auto;">
+                <img src="{{ asset('storage/' . setting('logo')) }}" alt="Logo" style="height: 120px; max-height: 150px; width: auto; display: block; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
             @else
                 <span>Lemongrass</span>
             @endif
@@ -90,39 +90,18 @@
             <input type="email" name="admin_email" value="{{ old('admin_email', $setting->admin_email) }}">
         </div>
 
+        <div class="form-group">
+            <label>Order Tax Rate (%)</label>
+            <select name="order_tax_rate">
+                <option value="8" {{ (old('order_tax_rate') ?? (int)$setting->order_tax_rate) == 8 ? 'selected' : '' }}>8%</option>
+                <option value="16" {{ (old('order_tax_rate') ?? (int)$setting->order_tax_rate) == 16 ? 'selected' : '' }}>16%</option>
+            </select>
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="action-btn">Save Changes</button>
         </div>
     </form>
 </div>
 
-{{-- تغيير كلمة المرور --}}
-<div class="content-section">
-    <div class="section-header">
-        <h2>Change Password</h2>
-    </div>
-
-    <form action="{{ route('admin.settings.change-password') }}" method="POST">
-        @csrf
-
-        <div class="form-group">
-            <label>Current Password</label>
-            <input type="password" name="current_password">
-        </div>
-
-        <div class="form-group">
-            <label>New Password</label>
-            <input type="password" name="password">
-        </div>
-
-        <div class="form-group">
-            <label>Confirm New Password</label>
-            <input type="password" name="password_confirmation">
-        </div>
-
-        <div class="form-actions">
-            <button type="submit" class="action-btn">Change Password</button>
-        </div>
-    </form>
-</div>
 @endsection

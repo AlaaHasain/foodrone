@@ -32,7 +32,7 @@ class GalleryController extends Controller
 
         Gallery::create([
             'image_path' => $path,
-            // 'type' => $request->type,
+            'type' => $request->type,
         ]);
 
         return redirect()->route('admin.galleries.index')->with('success', 'Image uploaded successfully.');

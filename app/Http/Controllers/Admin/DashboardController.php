@@ -9,6 +9,7 @@ use App\Models\Reservation;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+
 class DashboardController extends Controller
 {
     public function index()
@@ -56,4 +57,59 @@ class DashboardController extends Controller
             'topSellingDishes'
         ));
     }
+    public function stats()
+{
+    $totalOrders = \App\Models\Order::count();
+    $todaysOrders = \App\Models\Order::whereDate('created_at', today())->count();
+    $totalSales = \App\Models\OrderItem::sum(DB::raw('price * quantity'));    $todayReservations = Reservation::whereDate('created_at', today())->count();
+
+    return view('admin.dashboard.partials.stats', compact('totalOrders', 'todaysOrders', 'totalSales', 'todayReservations' ));
+}
+
+public function topSelling()
+{
+    $topSellingDishes = \App\Models\OrderItem::select('menu_item_id', \DB::raw('SUM(quantity) as total_sold'))
+        ->groupBy('menu_item_id')
+        ->with('menuItem')
+        ->orderByDesc('total_sold')
+        ->take(5)
+        ->get()
+        ->map(function ($item) {
+            return (object)[
+                'name' => optional($item->menuItem)->name ?? 'Unknown',
+                'total_sold' => $item->total_sold,
+            ];
+        });
+
+    return view('admin.dashboard.partials.top-selling', compact('topSellingDishes'));
+}
+
+public function chartData()
+{
+    $orders = \App\Models\Order::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+        ->whereDate('created_at', '>=', now()->subDays(6)->toDateString())
+        ->groupBy('date')
+        ->orderBy('date')
+        ->get();
+
+    $labels = [];
+    $data = [];
+
+    $range = collect(range(0, 6))->map(function ($i) {
+        return now()->subDays(6 - $i)->format('Y-m-d');
+    });
+
+    foreach ($range as $date) {
+        $labels[] = \Carbon\Carbon::parse($date)->format('M d');
+        $dayData = $orders->firstWhere('date', $date);
+        $data[] = $dayData ? $dayData->total : 0;
+    }
+
+    return response()->json([
+        'labels' => $labels,
+        'data' => $data,
+    ]);
+}
+
+
 }

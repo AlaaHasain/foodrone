@@ -32,12 +32,88 @@
     .method-btn i {
         margin-right: 6px;
     }
+
+    @media (max-width: 576px) {
+    table thead {
+        display: none;
+    }
+
+    table tbody tr {
+        display: block;
+        margin-bottom: 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    table tbody tr td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        font-size: 14px;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    table tbody tr td:last-child {
+        border-bottom: none;
+    }
+
+    table tbody tr td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #555;
+        flex: 1;
+        max-width: 50%;
+    }
+
+    .qr-qty {
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .d-flex.justify-content-center.align-items-center {
+        flex-wrap: wrap;
+    }
+}
+/* تحسين عرض الكارت بدون صورة */
+#qr-cart-body td {
+    vertical-align: top;
+    padding: 12px 10px;
+}
+
+#qr-cart-body strong {
+    font-size: 15px;
+    color: #2a5f2d;
+}
+
+#qr-cart-body ul {
+    padding-left: 15px;
+    margin-top: 5px;
+}
+
+@media (max-width: 768px) {
+    #qr-cart-body td {
+        font-size: 13px;
+    }
+
+    .qr-qty {
+        font-size: 14px;
+    }
+
+    .qr-remove, .qr-qty-plus, .qr-qty-minus {
+        font-size: 12px;
+        padding: 4px 6px;
+    }
+}
+
 </style>
 
 <div class="container py-5" id="qr-cart-container">
     <h2 class="text-center mb-4">Your QR Cart</h2>
 
-    <!-- إذا كانت السلة فارغة -->
     <div id="empty-cart-message" style="display: {{ empty($cart) ? 'block' : 'none' }}">
         <div class="alert alert-info text-center">Your QR cart is empty.</div>
         <div class="text-center">
@@ -45,7 +121,11 @@
         </div>
     </div>
 
-    <!-- إذا كانت السلة تحتوي على عناصر -->
+    <div id="viewOrderContainer" class="text-center mt-3" style="display: none;">
+            <a href="#" id="viewMyOrderBtn" class="btn btn-outline-success btn-lg">
+                🧾 View My Order
+            </a>
+    </div>
     <div id="cart-content" style="display: {{ empty($cart) ? 'none' : 'block' }}">
         <div class="table-responsive">
             <table class="table table-bordered text-center align-middle">
@@ -66,29 +146,47 @@
                             $total += $subtotal;
                         @endphp
                         <tr data-id="{{ $id }}">
-                            <td class="text-start d-flex align-items-center">
-                                @if(isset($item['image']))
-                                    <img src="{{ asset('storage/' . $item['image']) }}" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                            <td class="text-start" data-label="Dish">
+                                <strong>{{ $item['name'] }}</strong>
+                                @if(!empty($item['options']))
+                                    <ul class="mb-0 ps-3 small text-muted">
+                                        @foreach($item['options'] as $option)
+                                            @if(isset($option['additional_price']) && $option['additional_price'] > 0)
+                                                <li>{{ $option['value'] ?? '' }} (+{{ number_format($option['additional_price'], 2) }} JOD)</li>
+                                            @endif
+                                        @endforeach
+                                    </ul>
                                 @endif
-                                {{ $item['name'] }}
                             </td>
-                            <td>${{ number_format($item['price'], 2) }}</td>
-                            <td>
+                            <td data-label="Price">${{ number_format($item['price'], 2) }}</td>
+                            <td data-label="Quantity">
                                 <div class="d-flex justify-content-center align-items-center">
                                     <button class="btn btn-sm btn-dark me-1 qr-qty-minus">−</button>
                                     <span class="fw-bold mx-2 qr-qty">{{ $item['quantity'] }}</span>
                                     <button class="btn btn-sm btn-dark ms-1 qr-qty-plus">+</button>
                                 </div>
                             </td>
-                            <td class="qr-subtotal">${{ number_format($subtotal, 2) }}</td>
-                            <td><button class="btn btn-sm btn-danger qr-remove">Remove</button></td>
+                            <td class="qr-subtotal" data-label="Subtotal">${{ number_format($subtotal, 2) }}</td>
+                            <td data-label="Action">
+                                <button class="btn btn-sm btn-danger qr-remove">Remove</button>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
 
-        <h4 class="text-center mt-4">Total: <span id="qr-cart-total">${{ number_format($total, 2) }}</span></h4>
+@php
+    $taxRate = \App\Models\Setting::first()->order_tax_rate ?? 0;
+    $taxAmount = $total * ($taxRate / 100);
+    $totalWithTax = $total + $taxAmount;
+@endphp
+<div class="text-center mt-4">
+    <h5>Subtotal: <span class="qr-subtotal-value fw-normal">${{ number_format($total, 2) }}</span></h5>
+    <h5>Tax ({{ $taxRate }}%): <span class="qr-tax-value fw-normal">${{ number_format($taxAmount, 2) }}</span></h5>
+    <h4 class="mt-2">Total: <span class="qr-total-value text-success">${{ number_format($totalWithTax, 2) }}</span></h4>
+</div>
+
 
         <div class="text-center mt-4 d-flex justify-content-center gap-3 flex-wrap">
             <a href="{{ route('menu.qr.view', ['token' => $token]) }}" class="btn btn-dark btn-lg">← Continue Ordering</a>
@@ -104,6 +202,10 @@
                         <div class="col-md-6">
                             <label for="customer_name" class="form-label">Your Name</label>
                             <input type="text" id="customer_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="customer_phone" class="form-label">Phone Number</label>
+                            <input type="text" id="customer_phone" class="form-control" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Payment Method</label>
@@ -129,6 +231,36 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function fetchTaxCalculation() {
+    console.log('🔄 Fetching tax...');
+    fetch("{{ route('qr.tax.calculate') }}")
+        .then(res => res.json())
+        .then(data => {
+            console.log('✅ Tax data:', data);
+            document.querySelector('.qr-subtotal-value').textContent = `$${parseFloat(data.subtotal).toFixed(2)}`;
+            document.querySelector('.qr-tax-value').textContent = `$${parseFloat(data.tax_amount).toFixed(2)}`;
+            document.querySelector('.qr-total-value').textContent = `$${parseFloat(data.total).toFixed(2)}`;
+        })
+        .catch(err => console.error("Tax Fetch Error:", err));
+}
+
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const token = localStorage.getItem('qr_order_token');
+    const container = document.getElementById('viewOrderContainer');
+
+    if (token && container) {
+        container.innerHTML = `
+            <a href="/qr/order/${token}" class="btn btn-outline-success btn-lg">
+                🧾 View My Order
+            </a>
+        `;
+        container.style.display = 'block';
+    }
+});
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -150,7 +282,10 @@
                     row.querySelector('.qr-qty').textContent = quantity;
                     row.querySelector('.qr-subtotal').textContent = '$' + data.subtotal.toFixed(2);
                 }
-                document.getElementById('qr-cart-total').textContent = '$' + data.total.toFixed(2);
+
+fetchTaxCalculation();
+
+document.querySelector('.qr-total-value').textContent = '$' + data.total.toFixed(2);
     
                 const cartCounter = document.getElementById('floating-cart-count');
                 if (cartCounter) {
@@ -194,17 +329,27 @@
                     .then(res => res.json())
                     .then(data => {
                         row.remove();
-                        document.getElementById('qr-cart-total').textContent = '$' + data.total.toFixed(2);
+document.querySelector('.qr-total-value').textContent = '$' + data.total.toFixed(2);
     
                         const cartCounter = document.getElementById('floating-cart-count');
                         if (cartCounter) {
                             cartCounter.textContent = data.count;
                         }
+
+fetchTaxCalculation();
+
     
-                        if (data.count === 0) {
-                            document.getElementById('empty-cart-message').style.display = 'block';
-                            document.getElementById('cart-content').style.display = 'none';
-                        }
+if (data.count === 0) {
+    document.getElementById('empty-cart-message')?.classList.remove('d-none');
+    document.getElementById('empty-cart-message').style.display = 'block';
+
+    document.getElementById('cart-content')?.classList.add('d-none');
+    document.getElementById('cart-content').style.display = 'none';
+
+    // كمان خفي الزر السفلي
+    document.getElementById('showCheckoutForm')?.classList.add('d-none');
+}
+
                     });
                 };
             });
@@ -226,6 +371,7 @@
     
             const formData = {
                 customer_name: document.getElementById('customer_name').value,
+                customer_phone: document.getElementById('customer_phone').value, 
                 table_number: tableNumber,
                 payment_method: document.querySelector('input[name="payment_method"]:checked')?.value
             };
@@ -274,5 +420,32 @@
         }
     });
     </script>
-    
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const orderToken = localStorage.getItem('qr_order_token');
+    const viewOrderBtn = document.getElementById('viewMyOrderBtn');
+    const container = document.getElementById('viewOrderContainer');
+
+    if (orderToken && viewOrderBtn && container) {
+        container.style.display = 'block';
+        viewOrderBtn.href = `/qr/order/${orderToken}`;
+    }
+});
+</script>
+
+<script>
+window.addEventListener('load', function () {
+    const currentPath = window.location.pathname;
+
+    // 🔒 لا تحذف التوكن نهائياً، فقط إذا كنت على صفحة خارج QR
+    if (
+        !currentPath.startsWith('/qr/')
+        && !currentPath.includes('/order')
+        && !currentPath.includes('/cart')
+    ) {
+        localStorage.removeItem('qr_order_token');
+    }
+});
+
+</script>
 @endsection

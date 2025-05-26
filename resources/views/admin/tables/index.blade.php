@@ -1,304 +1,99 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Tables List')
+@section('title', 'Tables Management')
+
+@section('content')
 <style>
-    /* Card and table container styles */
-.card {
-    border: none;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
+    .add-btn {
+        background-color: #0d9488;
+        color: white;
+        padding: 10px 20px;
+        font-weight: 600;
+        border-radius: 10px;
+        text-decoration: none;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
 
-/* Table general styles */
-.table {
-    margin-bottom: 0;
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-}
+    .add-btn:hover {
+        background-color: #0f766e;
+        transform: translateY(-2px);
+    }
 
-/* Table header styles */
-.table thead tr {
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.table thead th {
-    color: #374151;
-    font-weight: 600;
-    font-size: 0.875rem;
-    padding: 1rem;
-    border-top: none;
-    text-align: left;
-}
-
-/* Table body styles */
-.table tbody tr {
-    border-bottom: 1px solid #e5e7eb;
-    transition: background-color 0.2s;
-}
-
-.table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.table tbody tr:hover {
-    background-color: #f9fafb;
-}
-
-.table tbody td {
-    padding: 1rem;
-    vertical-align: middle;
-    color: #4b5563;
-}
-
-/* Action buttons */
-.btn-icon {
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
-    padding: 0.5rem;
-    border-radius: 0.25rem;
-}
-
-.edit-btn {
-    color: #0d9488; /* Teal color for edit button */
-}
-
-.delete-btn {
-    color: #ef4444; /* Red color for delete button */
-}
-
-.btn-icon:hover {
-    transform: scale(1.1);
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Professional Dashboard Table Styles */
-
-/* Main container */
-.content-wrapper {
-    background-color: #f8fafc;
-    padding: 1.5rem;
-}
-
-/* Card container */
-.content-card {
-    background-color: #ffffff;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-    transition: box-shadow 0.3s ease;
-}
-
-.content-card:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* Page header */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding: 0 0.5rem;
-}
-
-.page-title {
-    color: #1e293b;
-    font-size: 1.5rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-}
-
-.page-title i, .page-title svg {
-    margin-right: 0.75rem;
-    color: #334155;
-}
-
-/* Action button */
-.btn-primary {
-    background-color: #0284c7;
-    color: white;
-    font-weight: 600;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    border: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.btn-primary:hover {
-    background-color: #0369a1;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.12);
-    color: white;
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-}
-
-/* Table styling */
-.data-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-}
-
-.data-table thead th {
-    background-color: #f1f5f9;
-    color: #475569;
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 1rem 1.5rem;
-    border-bottom: 2px solid #e2e8f0;
-    text-align: left;
-}
-
-.data-table tbody tr {
-    border-bottom: 1px solid #e2e8f0;
-    transition: background-color 0.15s ease;
-}
-
-.data-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.data-table tbody tr:hover {
-    background-color: #f8fafc;
-}
-
-.data-table td {
-    padding: 1rem 1.5rem;
-    color: #334155;
-    font-size: 0.9375rem;
-    vertical-align: middle;
-}
-
-/* Actions column */
-.actions-cell {
-    text-align: right;
-    white-space: nowrap;
-}
-
-/* Action buttons */
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 0.375rem;
-    border: none;
-    background: transparent;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    margin-left: 0.25rem;
-}
-
-.edit-btn {
-    color: #0284c7;
-}
-
-.edit-btn:hover {
-    background-color: rgba(2, 132, 199, 0.1);
-}
-
-.delete-btn {
-    color: #ef4444;
-}
-
-.delete-btn:hover {
-    background-color: rgba(239, 68, 68, 0.1);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
     .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    .data-table thead {
-        display: none;
-    }
-    
-    .data-table tbody tr {
-        display: block;
-        padding: 0.75rem 0;
-    }
-    
-    .data-table td {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.5rem 1rem;
-        text-align: right;
+        margin-bottom: 25px;
     }
-    
-    .data-table td:before {
-        content: attr(data-label);
+
+    .page-header h2 {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .table thead {
+        background-color: #fef3c7;
+    }
+
+    .table th {
+        color: #92400e;
         font-weight: 600;
-        margin-right: 1rem;
-        text-align: left;
+        text-transform: uppercase;
+        font-size: 0.875rem;
     }
-    
-    .actions-cell {
-        justify-content: flex-end;
+
+    .table td {
+        vertical-align: middle;
+        font-size: 0.95rem;
+        color: #374151;
     }
-}
+
+    .qr-code svg {
+        max-width: 60px;
+        height: auto;
+    }
+
+    .delete-btn {
+        border: none;
+        background: none;
+        color: #dc3545;
+        font-size: 18px;
+        transition: transform 0.2s ease;
+    }
+
+    .delete-btn:hover {
+        transform: scale(1.2);
+        color: #a30000;
+    }
+
+    .no-tables {
+        text-align: center;
+        font-weight: 500;
+        color: #6b7280;
+        padding: 20px;
+    }
 </style>
-@section('content')
+
 <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="fw-bold"><i class="fas fa-tags me-2"></i> Tables Management</h2>
-    
-        <a href="{{ route('admin.categories.create') }}"
-            class="btn"
-            style="
-                background-color: #0d9488;
-                color: white;
-                padding: 10px 20px;
-                font-weight: 600;
-                border-radius: 10px;
-                text-decoration: none;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-            "
-            onmouseover="this.style.backgroundColor='#0f766e'"
-            onmouseout="this.style.backgroundColor='#0d9488'"
-        >
-            <i class="fas fa-plus"></i> Add New Category
+    <div class="page-header">
+        <h2><i class="fas fa-table me-2 text-warning"></i>Tables Management</h2>
+        <a href="{{ route('admin.tables.create') }}" class="add-btn">
+            <i class="fas fa-plus"></i> Add New Table
         </a>
     </div>
-    
-            
-    </div>
 
-    <div class="card shadow-sm rounded">
+    <div class="card shadow-sm rounded-4 border-0">
         <div class="card-body table-responsive">
             <table class="table table-bordered table-hover align-middle text-center">
-                <thead class="table-warning">
+                <thead>
                     <tr>
                         <th>ID</th>
                         <th>Table Number</th>
-                        <th>QR Token</th>
+                        <th>QR Code</th>
                         <th>Created At</th>
                         <th>Actions</th>
                     </tr>
@@ -308,21 +103,21 @@
                         <tr>
                             <td>{{ $table->id }}</td>
                             <td>{{ $table->table_number }}</td>
-                            <td>{!! QrCode::size(60)->generate('http://192.168.100.184:8000/qr/' . $table->qr_token) !!}</td>
+                            <td class="qr-code">{!! QrCode::size(60)->generate('http:172.20.10.2:8000/qr/' . $table->qr_token) !!}</td>
                             <td>{{ $table->created_at->format('d M Y H:i') }}</td>
-                            <td class="text-center">
+                            <td>
                                 <form action="{{ route('admin.tables.destroy', $table->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this table?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" style="border: none; background: none; cursor: pointer; color: #dc3545; font-size: 18px;">
+                                    <button type="submit" class="delete-btn">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
-                            </td>                            
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5">No tables found.</td>
+                            <td colspan="5" class="no-tables">No tables found.</td>
                         </tr>
                     @endforelse
                 </tbody>

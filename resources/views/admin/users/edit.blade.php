@@ -4,9 +4,14 @@
 
 @section('content')
 <div class="content-section">
-    <div class="section-header">
-        <h2>Edit User</h2>
-    </div>
+    
+<div class="section-header d-flex justify-between align-items-center" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Edit User</h2>
+    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary" style="padding: 8px 16px; border-radius: 6px; background-color: #ccc; color: #000; text-decoration: none;">
+        ← Back
+    </a>
+</div>
+
 
     <form action="{{ route('admin.users.update', $user) }}" method="POST">
         @csrf
@@ -45,6 +50,7 @@
         <div class="form-actions">
             <button class="action-btn" type="submit">Update User</button>
         </div>
+        
     </form>
 </div>
 @endsection

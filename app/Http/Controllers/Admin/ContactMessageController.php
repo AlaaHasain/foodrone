@@ -17,67 +17,57 @@ class ContactMessageController extends Controller
         return view('admin.contact-messages.index', compact('messages'));
     }
 
-    public function show($id)
-    {
-        $message = ContactMessage::findOrFail($id);
+public function show($id)
+{
+    $message = ContactMessage::findOrFail($id);
+    
+    $message->replies()
+        ->where('sender_type', 'customer')
+        ->where('is_read_by_admin', false)
+        ->update(['is_read_by_admin' => true]);
 
-// تحديث حالة جميع ردود العميل إلى مقروءة لما المسؤول يفتح المحادثة
-        $message->replies()
-            ->where('sender_type', 'customer')
-            ->where('is_read_by_admin', false)
-            ->update(['is_read_by_admin' => true]);
-        
-
-        if (!$message->is_read) {
-            $message->update(['is_read' => true]);
-        }
-
-        // Load all replies related to this message
-        $replies = $message->replies()->latest()->get();
-
-        return view('admin.contact-messages.show', compact('message', 'replies'));
+    if (!$message->is_read) {
+        $message->update(['is_read' => true]);
     }
 
-    public function reply(Request $request, $id)
-    {
-        // Validate request
-        $request->validate([
-            'reply_content' => 'required|string|max:1000',
-        ]);
+    // فقط نعيد البيانات هنا
+    return view('admin.contact-messages.show', [
+        'message' => $message,
+        'replies' => $message->replies()->oldest()->get()
+    ]);
+}
 
-        $message = ContactMessage::findOrFail($id);
+public function reply(Request $request, $id)
+{
+    $request->validate([
+        'reply_content' => 'required|string|max:1000',
+    ]);
 
-        // Save reply to database
-        $reply = Reply::create([
-            'contact_message_id' => $message->id,
-            'content' => $request->reply_content,
-            'sender_type' => 'admin',
-        ]);
+    $message = ContactMessage::findOrFail($id);
 
-        // If it's an AJAX request
-        if ($request->ajax() || $request->expectsJson()) {
-            // Send email in background (you might want to use a queue for this)
-            $this->sendReplyEmail($message, $request->reply_content);
-            
-            return response()->json([
-                'success' => true,
-                'reply' => $reply
-            ]);
-        }
+    $reply = Reply::create([
+        'contact_message_id' => $message->id,
+        'content' => $request->reply_content,
+        'sender_type' => 'admin',
+    ]);
 
-        // Send email to customer
-        $this->sendReplyEmail($message, $request->reply_content);
+    // 🟡 أرسل نسخة من الرد إلى الإيميل
+    $this->sendReplyEmail($message, $request->reply_content);
 
-        // Redirect back with success message
-        return redirect()->route('admin.contact-messages.show', $message->id)
-                         ->with('success', 'Reply sent successfully!');
-    }
+    return response()->json([
+        'success' => true,
+        'reply' => $reply,
+    ]);
+}
+
+
 
     /**
      * Send reply email to customer
      */
     private function sendReplyEmail($message, $content)
     {
+        \Log::info('Sending email to: ' . $message->email);
         Mail::html(
             '<h2 style="color:#333;">Hello ' . e($message->name) . '!</h2>
             <p style="color:#555;">We have replied to your message:</p>
@@ -94,26 +84,41 @@ class ContactMessageController extends Controller
                 $messageObj->to($message->email)
                            ->subject('Reply to Your Message');
             }
+
         );
     }
+
+public function fetch(Request $request)
+{
+    $messages = ContactMessage::latest()->paginate(10);
+
+    return response()->json([
+        'html' => view('admin.contact-messages.partials.list', compact('messages'))->render(),
+        'pagination' => [
+            'current_page' => $messages->currentPage(),
+            'last_page' => $messages->lastPage()
+        ]
+    ]);
+}
+
 
     /**
      * Check for new replies (for AJAX polling)
      */
-    public function checkReplies(Request $request, $id)
-    {
-        $lastId = $request->input('last_id', 0);
-        $message = ContactMessage::findOrFail($id);
-        
-        // Get replies newer than the last ID
-        $replies = $message->replies()
-                          ->where('id', '>', $lastId)
-                          ->get();
-        
-        return response()->json([
-            'replies' => $replies
-        ]);
-    }
+public function checkReplies(Request $request, $id)
+{
+    $lastId = $request->input('last_id', 0);
+    $message = ContactMessage::findOrFail($id);
+
+    $replies = $message->replies()
+                       ->where('id', '>', $lastId)
+                       ->get();
+
+    return response()->json([
+        'replies' => $replies
+    ]);
+}
+
 
     /**
      * Get count of unread messages (for notifications)

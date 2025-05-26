@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->enum('order_type', ['pickup', 'delivery']);
+            $table->enum('order_type', ['pickup', 'delivery', 'dine_in']);
             $table->string('customer_name');
             $table->string('customer_phone');
             $table->string('customer_email')->nullable();

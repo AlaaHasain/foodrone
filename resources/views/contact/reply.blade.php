@@ -377,6 +377,66 @@ body {
     .col-md-10 {
         padding: 0;
     }
+    @media (max-width: 576px) {
+    .chat-card {
+        border-radius: 0;
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .message-bubble {
+        max-width: 85%;
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .message-time {
+        font-size: 10px;
+        margin-top: 4px;
+    }
+
+    .message-item {
+        margin-bottom: 10px;
+    }
+
+    .chat-header {
+        padding: 15px;
+    }
+
+    .chat-user-info h4 {
+        font-size: 15px;
+    }
+
+    .chat-footer {
+        padding: 10px;
+    }
+
+    #reply_content {
+        font-size: 13px;
+        padding: 8px 4px;
+    }
+
+    .send-button {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+    }
+
+    .chat-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+
+    .chat-header-user .chat-user-info p {
+        font-size: 11px;
+    }
+
+    .message-input-container {
+        padding: 5px 10px;
+    }
+}
+
 }
 </style>
 

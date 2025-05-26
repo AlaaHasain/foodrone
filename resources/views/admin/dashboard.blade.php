@@ -4,6 +4,17 @@
 
 @section('content')
 <style>
+
+/* لإخفاء Scrollbar العمودي لكن يضل التمرير شغال */
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Edge, Safari */
+}
+
+body {
+    -ms-overflow-style: none;  /* IE 10+ */
+    scrollbar-width: none;     /* Firefox */
+}
+
     .stats-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -64,89 +75,107 @@
     .top-selling tr:last-child td {
         border-bottom: none;
     }
+
 </style>
 
-<div class="stats-container">
-    <div class="stat-card">
-        <h3>Today's Orders</h3>
-        <p>{{ $todayOrdersCount }}</p>
-    </div>
-    <div class="stat-card">
-        <h3>Revenue Today<br><small>(pick up , delivery)</small></h3>
-        <p>${{ number_format($todayRevenue, 2) }}</p>
-    </div>
-    <div class="stat-card">
-        <h3>Active Menu Items</h3>
-        <p>{{ $activeMenuItemsCount }}</p>
-    </div>
-    <div class="stat-card">
-        <h3>Reservations Today</h3>
-        <p>{{ $todayReservations }}</p>
-    </div>
+<audio id="notificationSound" src="{{ asset('sounds/notification.mp3') }}" preload="auto"></audio>
+
+<div class="stats-container" id="dashboard-stats">
+    <div class="text-center">Loading stats...</div>
 </div>
 
 <div class="flex-charts mt-5">
-    {{-- الرسم البياني --}}
     <div class="chart-container">
         <h4 class="mb-4">Orders in Last 7 Days</h4>
         <canvas id="ordersChart" height="100"></canvas>
     </div>
 
-    {{-- الأصناف الأعلى مبيعًا --}}
-    <div class="top-selling">
-        <h4 class="mb-4">Top Selling Dishes</h4>
-        <table>
-            <thead>
-                <tr>
-                    <th>Dish</th>
-                    <th>Sales</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($topSellingDishes as $dish)
-                <tr>
-                    <td>{{ $dish->name }}</td>
-                    <td>{{ $dish->total_sold }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+    <div class="top-selling" id="top-selling-container">
+        <div class="text-center">Loading top selling...</div>
     </div>
 </div>
 
-{{-- Chart.js --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('ordersChart').getContext('2d');
-    const ordersChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {!! json_encode($ordersChartLabels) !!},
-            datasets: [{
-                label: 'Orders',
-                data: {!! json_encode($ordersChartData) !!},
-                borderColor: '#ffbe33',
-                backgroundColor: 'rgba(255, 190, 51, 0.1)',
-                tension: 0.4,
-                fill: true,
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
+    let ordersChart;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.body.addEventListener('click', function () {
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(() => {});
             }
+        }, { once: true });
+
+        function fetchStats() {
+            fetch("{{ route('admin.dashboard.stats') }}")
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('dashboard-stats').innerHTML = html;
+                });
         }
+
+        function fetchTopSelling() {
+            fetch("{{ route('admin.dashboard.topSelling') }}")
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('top-selling-container').innerHTML = html;
+                });
+        }
+
+        function loadChartData() {
+            fetch("{{ route('admin.dashboard.chartData') }}")
+                .then(res => res.json())
+                .then(data => {
+                    const ctx = document.getElementById('ordersChart').getContext('2d');
+                    if (ordersChart) {
+                        ordersChart.data.labels = data.labels;
+                        ordersChart.data.datasets[0].data = data.data;
+                        ordersChart.update();
+                    } else {
+                        ordersChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.labels,
+                                datasets: [{
+                                    label: 'Orders',
+                                    data: data.data,
+                                    borderColor: '#ffbe33',
+                                    backgroundColor: 'rgba(255, 190, 51, 0.1)',
+                                    tension: 0.4,
+                                    fill: true,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            stepSize: 1
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+        }
+
+        fetchStats();
+        fetchTopSelling();
+        loadChartData();
+
+        setInterval(fetchStats, 15000);
+        setInterval(loadChartData, 20000);
     });
 </script>
 @endsection
